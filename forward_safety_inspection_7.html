@@ -707,6 +707,33 @@
 <!-- ══════════════ TOAST ══════════════ -->
 <div class="toast" id="toast"></div>
 
+
+<!-- IMAGE EDITOR MODAL -->
+<div class="img-editor-overlay" id="imgEditorOverlay">
+  <div class="img-editor-toolbar">
+    <button class="ed-btn ed-tool active" id="edToolDraw" onclick="edSetTool('draw')">&#x270F;&#xFE0F; Draw</button>
+    <button class="ed-btn ed-tool" id="edToolCrop" onclick="edSetTool('crop')">&#x2702;&#xFE0F; Crop</button>
+    <button class="ed-btn ed-btn-clear" onclick="edClearDrawings()">&#x1F5D1;&#xFE0F; Clear</button>
+    <div class="ed-color-row" id="edColors">
+      <span style="color:#aaa;font-size:11px">Color:</span>
+      <div class="ed-color active" style="background:#ff3b30" data-c="#ff3b30" onclick="edSetColor(this)"></div>
+      <div class="ed-color" style="background:#ffcc00" data-c="#ffcc00" onclick="edSetColor(this)"></div>
+      <div class="ed-color" style="background:#34c759" data-c="#34c759" onclick="edSetColor(this)"></div>
+      <div class="ed-color" style="background:#007aff" data-c="#007aff" onclick="edSetColor(this)"></div>
+      <div class="ed-color" style="background:#ffffff" data-c="#ffffff" onclick="edSetColor(this)"></div>
+      <div class="ed-color" style="background:#000000;border:1px solid #555" data-c="#000000" onclick="edSetColor(this)"></div>
+    </div>
+    <span class="ed-size-label">Size:</span>
+    <input type="range" class="ed-size" id="edBrushSize" min="2" max="30" value="6" oninput="edUpdateBrush()">
+    <button class="ed-btn ed-btn-cancel" onclick="edClose()">&#x2715; Cancel</button>
+    <button class="ed-btn ed-btn-save" onclick="edSave()">&#x2705; Save Photo</button>
+  </div>
+  <div class="img-editor-canvas-wrap" id="edCanvasWrap">
+    <canvas id="imgEditorCanvas"></canvas>
+  </div>
+  <div class="img-editor-status" id="edStatus">Draw mode &#8212; tap and drag to annotate</div>
+</div>
+
 <script>
 const EXPOSURE = [
   {l:'Very rare (<1/year)', v:0.5},
@@ -1188,33 +1215,7 @@ function generatePDF() {
 
 </div>
 
-<!-- ══ IMAGE EDITOR MODAL ══ -->
-<div class="img-editor-overlay" id="imgEditorOverlay">
-  <div class="img-editor-toolbar">
-    <button class="ed-btn ed-tool active" id="edToolDraw" onclick="edSetTool('draw')">&#x270F;&#xFE0F; Draw</button>
-    <button class="ed-btn ed-tool" id="edToolCrop" onclick="edSetTool('crop')">&#x2702;&#xFE0F; Crop</button>
-    <button class="ed-btn ed-btn-clear" onclick="edClearDrawings()">&#x1F5D1;&#xFE0F; Clear</button>
-    <div class="ed-color-row" id="edColors">
-      <span style="color:#aaa;font-size:11px">Color:</span>
-      <div class="ed-color active" style="background:#ff3b30" data-c="#ff3b30" onclick="edSetColor(this)"></div>
-      <div class="ed-color" style="background:#ffcc00" data-c="#ffcc00" onclick="edSetColor(this)"></div>
-      <div class="ed-color" style="background:#34c759" data-c="#34c759" onclick="edSetColor(this)"></div>
-      <div class="ed-color" style="background:#007aff" data-c="#007aff" onclick="edSetColor(this)"></div>
-      <div class="ed-color" style="background:#ffffff" data-c="#ffffff" onclick="edSetColor(this)"></div>
-      <div class="ed-color" style="background:#000000;border:1px solid #555" data-c="#000000" onclick="edSetColor(this)"></div>
-    </div>
-    <span class="ed-size-label">Size:</span>
-    <input type="range" class="ed-size" id="edBrushSize" min="2" max="30" value="6" oninput="edUpdateBrush()">
-    <button class="ed-btn ed-btn-cancel" onclick="edClose()">&#x2715; Cancel</button>
-    <button class="ed-btn ed-btn-save" onclick="edSave()">&#x2705; Save Photo</button>
-  </div>
-  <div class="img-editor-canvas-wrap" id="edCanvasWrap">
-    <canvas id="imgEditorCanvas"></canvas>
-  </div>
-  <div class="img-editor-status" id="edStatus">Draw mode &#8212; tap and drag to annotate</div>
-</div>
 
-</body>
 </html>`;
 
   const win = window.open('', '_blank');
