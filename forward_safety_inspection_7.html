@@ -1300,6 +1300,7 @@ function openImgEditor(findingId, photoIdx) {
   const overlay = document.getElementById('imgEditorOverlay');
   overlay.classList.add('open');
   const canvas = document.getElementById('imgEditorCanvas');
+  edAttachEvents();
   const img = new Image();
   img.onload = function() {
     _edBaseImage = img;
@@ -1315,7 +1316,6 @@ function openImgEditor(findingId, photoIdx) {
   img.src = f.photos[photoIdx];
   edSetTool('draw');
   document.getElementById('edStatus').textContent = 'Draw mode — tap and drag to annotate';
-  edAttachEvents();
 }
 
 function edAttachEvents() {
