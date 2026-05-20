@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Forward Safety — Gap Assessment App</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f0f2f5;color:#1a1a2e;min-height:100vh}
+:root{--navy:#1a1a2e;--gold:#c9a227;--green:#27ae60;--red:#e74c3c;--grey:#95a5a6;--blue:#2980b9;--shadow:0 2px 8px rgba(0,0,0,0.12)}
+.app-header{background:var(--navy);color:white;padding:12px 16px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100;box-shadow:var(--shadow)}
+.logo{width:40px;height:40px;background:var(--gold);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:15px;color:var(--navy);flex-shrink:0}
+.header-text h1{margin:0;font-size:17px;font-weight:700}
+.header-text p{margin:0;font-size:11px;color:#aaa}
+.save-dot{width:8px;height:8px;border-radius:50%;background:#27ae60;margin-left:auto;flex-shrink:0;transition:background .3s}
+.save-dot.saving{background:#f39c12;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.nav-tabs{background:white;display:flex;overflow-x:auto;border-bottom:2px solid #e0e0e0;position:sticky;top:64px;z-index:99;scrollbar-width:none}
+.nav-tabs::-webkit-scrollbar{display:none}
+.nav-tab{padding:10px 14px;font-size:12px;font-weight:600;color:#666;cursor:pointer;white-space:nowrap;border-bottom:3px solid transparent;transition:all .2s;flex-shrink:0;text-transform:uppercase;letter-spacing:.5px}
+.nav-tab.active{color:var(--navy);border-bottom-color:var(--gold)}
+.section{display:none;padding:12px;max-width:900px;margin:0 auto}
+.section.active{display:block}
+.card{background:white;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:var(--shadow)}
+.card h2{margin:0 0 12px;font-size:16px;color:var(--navy)}
+.form-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.form-group{flex:1;min-width:200px}
+.form-group label{display:block;font-size:12px;font-weight:600;color:#555;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:10px 12px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;font-family:inherit;transition:border-color .2s}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:var(--gold)}
+.form-group textarea{resize:vertical;min-height:70px}
+.dash-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+.dash-card{background:white;border-radius:12px;padding:16px;text-align:center;box-shadow:var(--shadow)}
+.dash-card .number{font-size:36px;font-weight:900;line-height:1}
+.dash-card .label{font-size:12px;color:#666;margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
+.dash-card.compliant .number{color:var(--green)}
+.dash-card.gaps .number{color:var(--red)}
+.dash-card.na .number{color:var(--grey)}
+.progress-bar{height:8px;background:#e0e0e0;border-radius:4px;overflow:hidden;margin-top:6px}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--green),#2ecc71);border-radius:4px;transition:width .5s}
+.topic-row{display:flex;align-items:center;padding:10px 0;border-bottom:1px solid #f0f0f0;gap:8px;cursor:pointer}
+.topic-row:last-child{border-bottom:none}
+.topic-name{font-weight:600;font-size:13px;min-width:130px}
+.topic-pills{display:flex;gap:5px;flex:1;flex-wrap:wrap}
+.pill{padding:3px 8px;border-radius:12px;font-size:11px;font-weight:700}
+.pill.c{background:#d5f5e3;color:#1e8449}
+.pill.g{background:#fadbd8;color:#c0392b}
+.pill.n{background:#f2f3f4;color:#7f8c8d}
+.go-btn{font-size:11px;color:var(--blue);font-weight:600;white-space:nowrap;background:none;border:1px solid var(--blue);padding:3px 8px;border-radius:6px;cursor:pointer}
+.topic-selector{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.topic-btn{padding:8px 12px;border-radius:8px;font-size:12px;font-weight:600;border:2px solid #ddd;background:white;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:4px}
+.topic-btn.active{background:var(--navy);color:white;border-color:var(--navy)}
+.topic-panel{display:none}
+.topic-panel.active{display:block}
+.section-badge{background:var(--navy);color:white;padding:10px 14px;border-radius:10px;margin-bottom:12px;font-size:13px;display:flex;align-items:center;justify-content:space-between}
+.q-card{background:white;border-radius:10px;margin-bottom:8px;box-shadow:0 1px 4px rgba(0,0,0,.08);overflow:hidden;border-left:4px solid #ddd;transition:border-color .2s}
+.q-card.yes{border-left-color:var(--green)}
+.q-card.no{border-left-color:var(--red)}
+.q-card.na{border-left-color:var(--grey)}
+.q-header{padding:12px;display:flex;align-items:flex-start;gap:10px}
+.q-num{background:#f0f2f5;color:var(--navy);font-weight:800;font-size:11px;padding:3px 7px;border-radius:6px;flex-shrink:0;margin-top:1px}
+.q-text{font-size:13px;line-height:1.5;flex:1}
+.q-docs{font-size:11px;color:#888;margin-top:4px;font-style:italic}
+.q-radios{display:flex;gap:6px;padding:0 12px 10px;flex-wrap:wrap}
+.q-radio-label{display:flex;align-items:center;gap:5px;padding:6px 14px;border:1.5px solid #ddd;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;transition:all .2s;user-select:none}
+.q-radio-label.yes-opt:has(input:checked){background:#d5f5e3;border-color:var(--green);color:#1e8449}
+.q-radio-label.no-opt:has(input:checked){background:#fadbd8;border-color:var(--red);color:#c0392b}
+.q-radio-label.na-opt:has(input:checked){background:#f2f3f4;border-color:var(--grey);color:#7f8c8d}
+.q-radio-label input{display:none}
+.finding-form{background:#fff8f8;border-top:1px solid #fad7d7;padding:12px;display:none}
+.finding-form.show{display:block}
+.finding-form .form-row{margin-bottom:8px}
+.action-table{width:100%;border-collapse:collapse;font-size:12px}
+.action-table th{background:var(--navy);color:white;padding:8px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+.action-table td{padding:8px;border-bottom:1px solid #f0f0f0;vertical-align:top}
+.action-table tr:nth-child(even) td{background:#f8f9fa}
+.st-open{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;background:#fadbd8;color:#c0392b}
+.st-due{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;background:#fef9e7;color:#d35400}
+.st-over{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;background:#f5cba7;color:#784212}
+.r-sum{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+.r-sum-card{border-radius:8px;padding:12px;text-align:center}
+.r-sum-card.c{background:#d5f5e3;color:#1e8449}
+.r-sum-card.g{background:#fadbd8;color:#c0392b}
+.r-sum-card.n{background:#f2f3f4;color:#7f8c8d}
+.r-sum-card .rn{font-size:28px;font-weight:900}
+.r-sum-card .rl{font-size:11px;font-weight:600;text-transform:uppercase}
+.fi{border-left:4px solid var(--red);padding:10px 12px;margin-bottom:8px;background:#fff8f8;border-radius:0 8px 8px 0}
+.fi h4{margin:0 0 4px;font-size:13px}
+.fi .fi-m{font-size:11px;color:#888}
+.fi .fi-d{font-size:12px;margin-top:6px;color:#444}
+.btn{padding:10px 20px;border-radius:8px;font-size:13px;font-weight:700;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:6px;margin-right:8px;margin-bottom:8px}
+.btn-p{background:var(--navy);color:white}
+.btn-o{background:white;color:var(--navy);border:2px solid var(--navy)}
+.rs{background:white;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:var(--shadow)}
+.rs h2{margin:0 0 12px;font-size:16px;color:var(--navy);border-bottom:2px solid var(--gold);padding-bottom:8px}
+@media print{.app-header,.nav-tabs,.topic-selector,.no-print,.btn{display:none!important}.section{display:block!important;padding:0!important}}
+</style>
+</head>
+<body>
+<div class="app-header">
+  <div class="logo">FS</div>
+  <div class="header-text"><h1>Forward Safety Gap Assessment</h1><p>OSHA Regulatory Compliance</p></div>
+  <div class="save-dot" id="saveDot"></div>
+</div>
+<div class="nav-tabs" id="navTabs">
+  <div class="nav-tab active" data-section="dashboard" onclick="showSection('dashboard')">&#x1F4CA; Dashboard</div>
+  <div class="nav-tab" data-section="siteinfo" onclick="showSection('siteinfo')">&#x1F4CB; Site Info</div>
+  <div class="nav-tab" data-section="assessment" onclick="showSection('assessment')">&#x2705; Assessment</div>
+  <div class="nav-tab" data-section="actions" onclick="showSection('actions')">&#x26A1; Actions <span id="aBadge" style="display:none;background:#e74c3c;color:white;border-radius:10px;font-size:10px;padding:1px 5px;margin-left:2px">0</span></div>
+  <div class="nav-tab" data-section="report" onclick="showSection('report')">&#x1F4C4; Report</div>
+</div>
+<div class="section active" id="section-dashboard">
+  <div class="dash-summary">
+    <div class="dash-card compliant"><div class="number" id="dc">0</div><div class="label">Compliant</div></div>
+    <div class="dash-card gaps"><div class="number" id="dg">0</div><div class="label">Gaps</div></div>
+    <div class="dash-card na"><div class="number" id="dn">0</div><div class="label">N/A</div></div>
+  </div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <strong style="font-size:14px">Overall Compliance</strong>
+      <span id="dpct" style="font-size:20px;font-weight:900;color:var(--green)">&#8212;</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="dbar" style="width:0%"></div></div>
+    <div style="font-size:11px;color:#888;margin-top:6px" id="dans">No questions answered yet</div>
+  </div>
+  <div class="card"><h2 style="margin-bottom:8px">By Topic</h2><div id="tBreak"></div></div>
+</div>
+<div class="section" id="section-siteinfo">
+  <div class="card">
+    <h2>Assessment Information</h2>
+    <div class="form-row">
+      <div class="form-group"><label>Client / Facility Name</label><input type="text" id="si-client" placeholder="Company name" oninput="autoSave()"></div>
+      <div class="form-group"><label>Assessment Date</label><input type="date" id="si-date" oninput="autoSave()"></div>
+    </div>
+    <div class="form-row"><div class="form-group" style="flex:100%"><label>Location / Address</label><input type="text" id="si-location" placeholder="Facility address" oninput="autoSave()"></div></div>
+    <div class="form-row">
+      <div class="form-group"><label>FS Representative</label><input type="text" id="si-rep" placeholder="FS consultant name" oninput="autoSave()"></div>
+      <div class="form-group"><label>Facility Inspector / Contact</label><input type="text" id="si-contact" placeholder="Client contact name" oninput="autoSave()"></div>
+    </div>
+  </div>
+</div>
+<div class="section" id="section-assessment">
+  <div class="topic-selector" id="tSel"></div>
+  <div id="tPanels"></div>
+</div>
+<div class="section" id="section-actions">
+  <div class="card" style="margin-bottom:12px"><h2 style="margin:0 0 4px">Action Tracker</h2><p style="font-size:12px;color:#888;margin:0">All corrective actions collected from gap findings in the Assessment tab.</p></div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <div style="overflow-x:auto">
+      <table class="action-table">
+        <thead><tr><th>Topic</th><th>Q#</th><th>Finding Title</th><th>Recommendation</th><th>Responsible Party</th><th>Due Date</th><th>Status</th></tr></thead>
+        <tbody id="aBody"></tbody>
+      </table>
+    </div>
+    <div id="noAct" style="padding:24px;text-align:center;color:#aaa;font-size:13px">No findings yet &#8212; answer questions in Assessment tab.</div>
+  </div>
+  <div style="margin-top:12px" class="no-print">
+    <button class="btn btn-o" onclick="copyActions()">&#x1F4CB; Copy Action List</button>
+    <button class="btn btn-p" onclick="window.print()">&#x1F5A8;&#xFE0F; Print</button>
+  </div>
+</div>
+<div class="section" id="section-report">
+  <div class="no-print" style="margin-bottom:12px">
+    <button class="btn btn-p" onclick="window.print()">&#x1F5A8;&#xFE0F; Print / Save PDF</button>
+    <button class="btn btn-o" onclick="copyReport()">&#x1F4CB; Copy Text Report</button>
+  </div>
+  <div id="rContent"></div>
+</div><script>
+const QUESTIONS={loto:[{qn:'1',req:'If the facility is required to establish an energy control program, it utilizes a lockout system on all energy isolating devices, unless the device is not capable of being locked out.',docs:'*Energy control (Lockout/Tagout, LOTO) program'},{qn:'2',req:'If the facility uses a tagout device on a device capable of being locked out, it ensures the tagout device is attached at the same location that the lockout device would be attached.',docs:'*Energy control (Lockout/Tagout, LOTO) program'},{qn:'3',req:'If the facility utilizes a tagout system where an energy isolating device is capable of being locked out, it demonstrates that the tagout program will provide a level of safety equivalent to that obtained by using a lockout program.',docs:'*Energy control (Lockout/Tagout, LOTO) program'},{qn:'4',req:'The LOTO procedures clearly and specifically outlines the scope, purpose, authorization, rules, and techniques to be utilized for the control of hazardous energy.',docs:'*Energy control (Lockout/Tagout, LOTO) program'},{qn:'5',req:'The LOTO program specifies the means for enforcement, and includes provisions for employee involvement.',docs:'*Energy control (Lockout/Tagout, LOTO) program'},{qn:'6',req:'The energy control procedure is used whenever employees service or maintain machines or equipment that could unexpectedly energize, start up, or release stored energy.',docs:'*Energy control (Lockout/Tagout, LOTO) program'},{qn:'7',req:'The LOTO training covers at a minimum: how the energy control program applies to each employee, the requirements for using energy control procedures, the purpose and use of the lockout/tagout procedures, and the responsibility of each authorized employee for the equipment for which they use LOTO.',docs:'*Energy control (Lockout/Tagout, LOTO) program\n*Employee training records'},{qn:'8',req:'Affected employees are trained to understand the purpose and use of the energy control procedure and instructions on how to prohibit them from restarting or re-energizing machines or equipment.',docs:'*Energy control (Lockout/Tagout, LOTO) program\n*Employee training records'},{qn:'9',req:'All other employees whose work operations could be in an area where energy control procedures may be utilized are instructed about the procedure and prohibition relating to attempts to restart or re-energize machines or equipment.',docs:'*Energy control (Lockout/Tagout, LOTO) program\n*Employee training records'},{qn:'10',req:'Retraining is provided for all authorized and affected employees when there is reason to believe that they do not have the required knowledge or skills or there is a change in job assignments, a change in machines, equipment, or processes that present a new hazard, or there is a change in the energy control procedures.',docs:'*Energy control (Lockout/Tagout, LOTO) program\n*Employee training records'},{qn:'11',req:'The employer certifies that LOTO employee training has been accomplished and is being kept up to date.',docs:'*Employee training records'},{qn:'12',req:'The employer conducts periodic inspections of LOTO energy control procedures at least once a year.',docs:'*Energy control (Lockout/Tagout, LOTO) program'},{qn:'13',req:'If the application of energy control involves a lockout system, periodic inspections are conducted by an authorized employee other than the one(s) using the energy control procedure.',docs:'*Inspection records'},{qn:'14',req:'If the application of energy control involves a tagout system, the periodic inspection includes a review, between the inspector and each authorized employee, of that employee\'s responsibilities under the energy control procedure being inspected.',docs:'*Inspection records'},{qn:'15',req:'The employer certifies that the periodic inspections have been performed by providing documentation.',docs:'*Inspection records'},{qn:'16',req:'The employer ensures that the energy control procedure contains documentation identifying each machine, step-by-step procedure for shutting down, isolating, blocking, and securing machinery, the type and magnitude of energy that must be controlled, and the means to control energy.',docs:'*Energy control (Lockout/Tagout, LOTO) program'},{qn:'17',req:'Energy isolating devices for equipment that must be locked out have been provided.',docs:''},{qn:'18',req:'LOTO devices used are assigned to specific employees; singular, durable and standardized, substantial, and identifiable.',docs:''},{qn:'19',req:'The application of energy control follows the proper sequence for application and removal.',docs:'*Energy control (Lockout/Tagout, LOTO) program'},{qn:'20',req:'All LOTO hardware (i.e., lockout hasps, tags, padlocks, etc.) are in good condition, properly labeled, and available.',docs:''},{qn:'21',req:'In the case where the authorized employee who applied the lockout device or tagout device is not available to remove it, the LOTO device may be removed under the direction of the employer, provided that specific procedures and training for such removal are developed, documented, and incorporated into the employer\'s energy control program.',docs:'*Energy control (Lockout/Tagout, LOTO) program'}],fall:[{qn:'1',req:'The facility provides protection for each employee on a walking/working surface with an unprotected side or edge which is 4 feet or more above a lower level (for general industry), or 6 feet or more (for construction), from falls.',docs:''},{qn:'2',req:'Except as noted below, the facility provides protection from fall hazards to each employee working at an elevation.',docs:''},{qn:'3',req:'The facility ensures that each employee on a walking/working surface (horizontal and vertical surface) with an unprotected side or edge which is 4 feet (1.2 m) or more above a lower level is protected from falling by the use of: guardrail systems, safety net systems, or personal fall arrest systems.',docs:''},{qn:'4',req:'Covers protect against falls through holes in floors, platforms, and other walking/working surfaces.',docs:''},{qn:'5',req:'Standard stairways are provided where the rise is more than 30 inches, with a minimum of three risers and at every point of access to any work area where employees work from elevated surfaces.',docs:''},{qn:'6',req:'Standard stairways have a minimum angle of 30 degrees and a maximum angle of 50 degrees from horizontal.',docs:''},{qn:'7',req:'Standard stairways are of substantial construction with a minimum live load of 1000 lbs (454 kg).',docs:''},{qn:'8',req:'Spiral stairways comply with all applicable requirements, including design and construction specifications.',docs:''},{qn:'9',req:'Ship stairs are used in areas where a standard stairway or spiral stairway is not practical.',docs:''},{qn:'10',req:'Alternating tread-type stairs are used where a standard stairway is not practical.',docs:''},{qn:'11',req:'Portable ladders used are designed and constructed per applicable standards.',docs:''},{qn:'12',req:'Wood portable ladders are not painted (except for identifying markings).',docs:''},{qn:'13',req:'Metal ladders are inspected for damaged rungs, loose or missing hardware, and corrosion.',docs:''},{qn:'14',req:'Non-self-supporting ladders are used at an angle such that the horizontal distance from the upper support to the foot of the ladder is about 1/4 of the working length of the ladder.',docs:''},{qn:'15',req:'When ascending or descending, employees face the ladder, hold on with both hands, and keep three points of contact.',docs:''},{qn:'16',req:'All fixed ladders that extend more than 24 feet (7.3 m) above the lower levels or floor, regardless of the year of installation, meet the applicable construction requirements.',docs:''},{qn:'17',req:'Fixed ladders are inspected at the time of initial use and at regular intervals thereafter, and any defects are repaired before further use.',docs:''},{qn:'18',req:'Mobile ladder stands and platforms comply with all applicable standards.',docs:''},{qn:'19',req:'Step bolts and manhole steps comply with applicable standards.',docs:''},{qn:'20',req:'Scaffold systems and components are used and moved only by qualified individuals.',docs:''},{qn:'21',req:'Scaffolds are designed by a qualified person for the intended use.',docs:''},{qn:'22',req:'Each scaffold plank or platform is adequately supported and has adequate capacity.',docs:''},{qn:'23',req:'Rope descent system (RDS) equipment is rated for and rigged for the loads intended.',docs:''},{qn:'24',req:'Each employee using a rope descent system is provided information and training on the proper use of the equipment.',docs:''},{qn:'25',req:'Anchorages used for attachment of personal fall arrest equipment are independent of any anchorage being used to support or suspend platforms and are capable of supporting at least 5,000 pounds per employee attached.',docs:''},{qn:'26',req:'Personal fall arrest systems comply with all applicable design and performance requirements.',docs:''},{qn:'27',req:'Body harnesses are used in personal fall arrest systems.',docs:''},{qn:'28',req:'Personal fall arrest systems, when stopping a fall, limit maximum arresting force on an employee to 1,800 pounds and bring an employee to a complete stop and limit maximum deceleration distance to 3.5 feet.',docs:''},{qn:'29',req:'Guardrail systems along unprotected sides and edges comply with height, strength, and opening requirements.',docs:''},{qn:'30',req:'Top rails and midrails of guardrail systems are at least 1/4 inch (0.6 cm) nominal diameter or thickness to prevent cuts and lacerations.',docs:''},{qn:'31',req:'Safety nets, where used, comply with applicable construction and use requirements.',docs:''},{qn:'32',req:'Standard handrails are provided on all stairways having four or more risers.',docs:''},{qn:'33',req:'Dockboards (bridge plates) are designed, constructed, and used in compliance with applicable standards.',docs:''},{qn:'34',req:'Runways are constructed safely and guarded by standard railings.',docs:''},{qn:'35',req:'When employees perform work on roofs and elevated surfaces without other means of fall protection, a warning line system is used.',docs:''},{qn:'36',req:'A controlled access zone can be used as a method of fall protection for leading edge work.',docs:''},{qn:'37',req:'Safety monitoring systems are used only in combination with other fall protection methods.',docs:''},{qn:'38',req:'A fall protection plan (in lieu of conventional fall protection) is available only to employees engaged in leading edge work, precast concrete erection, or residential construction, and meets all requirements.',docs:''}],forklift:[{qn:'1',req:'If the facility acquires or uses powered industrial trucks, then it complies with all design, construction, modification, and marking requirements.',docs:''},{qn:'2',req:'All fork trucks, tractors, platform lift trucks, motorized hand trucks, and other specialized industrial trucks are approved for use in the environment they are currently used in.',docs:''},{qn:'3',req:'Batteries and battery chargers meet minimum requirements for safety and functionality.',docs:''},{qn:'4',req:'Powered industrial trucks are maintained in safe operating condition.',docs:''},{qn:'5',req:'If a powered industrial truck is found to be in need of repair, defective, or in any way unsafe, the truck is taken out of service until it has been restored to safe operating condition.',docs:''},{qn:'6',req:'Operators are required to report any defects found before or during forklift operation.',docs:''},{qn:'7',req:'Powered industrial trucks are examined before being placed in service, and are not placed in service if the examination shows any condition adversely affecting the safety of the vehicle.',docs:''},{qn:'8',req:'Examinations are made at least daily. For trucks used on a round-the-clock basis, the trucks are examined after each shift.',docs:''},{qn:'9',req:'The employer ensures that each operator of a powered industrial truck is competent to operate a powered industrial truck safely.',docs:''},{qn:'10',req:'Operators are trained before being permitted to operate the forklift without supervision.',docs:''},{qn:'11',req:'Refresher training and evaluation is conducted when the operator has been observed to operate the vehicle in an unsafe manner, when involved in an accident, when an evaluation shows the operator is not operating the truck safely, when the operator is assigned to a different type of truck, or when a condition in the workplace changes.',docs:''},{qn:'12',req:'An evaluation of each powered industrial truck operator\'s performance is conducted at least once every 3 years.',docs:''},{qn:'13',req:'Certification is provided that documents the training, evaluation, and the date of the training/evaluation and the identity of the trainer/evaluator.',docs:''},{qn:'14',req:'Operating instructions, warnings, and precautions for the types of truck the operator will be authorized to operate are provided as part of training.',docs:''}],lifting:[{qn:'1',req:'If the facility uses mechanical handling equipment, it ensures that sufficient safe clearances are allowed.',docs:''},{qn:'2',req:'The facility ensures working platforms are only operated by persons who are proficient in the operation, safe use, and inspection of the particular working platform to be operated.',docs:''},{qn:'3',req:'The facility ensures that overhead and gantry cranes are operated by designated, qualified, and competent operators.',docs:''},{qn:'4',req:'The facility ensures that all cranes are operated and maintained in a safe manner.',docs:''},{qn:'5',req:'The facility ensures that crane operations and maintenance activities are performed by designated, qualified, and competent personnel.',docs:''},{qn:'6',req:'The facility establishes a program that ensures cranes and derricks are inspected, tested, and maintained in safe operating condition per applicable standards.',docs:''},{qn:'7',req:'The facility ensures that rated load capacities, recommended operating speeds, and special hazard warnings are posted on each piece of lifting equipment.',docs:''},{qn:'8',req:'The facility ensures that all equipment is inspected by a qualified person at regular intervals according to the criteria in applicable standards.',docs:''},{qn:'9',req:'The facility ensures that hooks with cracks or having more than 15% in excess of normal throat opening or more than 10 degree twist from the plane of the unbent hook are removed from service.',docs:''},{qn:'10',req:'The facility ensures that ropes are removed from service when the number of broken wires exceeds established limits.',docs:''},{qn:'11',req:'The facility ensures that running ropes are inspected and any deterioration is documented at least once a month.',docs:''},{qn:'12',req:'The facility ensures that all slings are removed from service when they exhibit damage or defects such as those listed in applicable standards.',docs:''},{qn:'13',req:'The facility ensures that all rigging equipment used for material handling (alloy steel chain slings, wire rope slings, metal mesh slings, natural rope slings, synthetic webbing, synthetic rope slings, shackles, hooks, and other rigging hardware) meets applicable design and use requirements.',docs:''},{qn:'14',req:'The facility ensures that employees who engage in rigging operations are qualified to do so.',docs:''}],machine:[{qn:'1',req:'All machinery is adequately guarded to protect the operator and other employees in the machine area from hazards such as those created by point of operation, ingoing nip points, rotating parts, flying chips and sparks.',docs:''},{qn:'2',req:'The facility properly guards the point of operation of machines whose operation exposes employees to injury.',docs:''},{qn:'3',req:'The facility ensures machines involving revolving drums, barrels, and containers are guarded by an enclosure interlocked with the drive mechanism so that the barrel, drum, or container cannot revolve unless the guard enclosure is in place.',docs:''},{qn:'4',req:'The facility provides fan blades less than 7 feet above the floor or work area with guards whose openings are no larger than 0.5 inch.',docs:''},{qn:'5',req:'If the facility employs mechanical power presses, it reports all point-of-operation injuries to employees to OSHA in writing or electronically within 30 days of the incident.',docs:''},{qn:'6',req:'All mechanical power presses comply with applicable design, construction, installation, operation, and maintenance requirements.',docs:''},{qn:'7',req:'The facility ensures that all mechanical press guarding and safety devices are properly used and applied per manufacturer\'s specifications and OSHA standards.',docs:''},{qn:'8',req:'The facility provides safety blocks for use when dies are being changed and when any employee is required to place their hands within the point of operation.',docs:''},{qn:'9',req:'All mechanical power presses used in the facility have been inspected and tested by a qualified person at least once per year and documentation is maintained.',docs:''},{qn:'10',req:'If the facility employs hydraulic power presses, all such presses comply with applicable design, construction, installation, and safety requirements.',docs:''},{qn:'11',req:'If the facility employs forging machines, the working areas around forging hammers, presses, forging machines, and upsetters are guarded by appropriate safeguards.',docs:''},{qn:'12',req:'All ingoing nip points of forging equipment are properly guarded.',docs:''},{qn:'13',req:'The facility ensures all forming rolls and calenders comply with applicable guarding requirements.',docs:''},{qn:'14',req:'The facility ensures all cooperative-type pull-outs comply with applicable guarding requirements.',docs:''},{qn:'15',req:'The facility ensures the speed-change mechanisms and drives are enclosed within a guard when within 7 feet of the floor or work platform.',docs:''},{qn:'16',req:'The facility ensures that all power takeoffs, rotating shafts, pulleys, belts, and other power transmission equipment within 7 feet of the work area are guarded.',docs:''},{qn:'17',req:'The facility ensures that all guards are securely fastened so as to prevent accidental removal, and are removed only for repair, maintenance, oiling, cleaning, or adjustment.',docs:''},{qn:'18',req:'The facility uses locking devices for all guards removed for lubrication or adjustment purposes.',docs:''},{qn:'19',req:'If the facility uses band saws, circular saws, or jointers for wood working, the blades are properly guarded.',docs:''},{qn:'20',req:'If the facility uses woodworking machinery, all woodworking machines are equipped with appropriate guards and safety devices.',docs:''},{qn:'21',req:'The facility ensures that all abrasive wheel machinery is properly used and guarded.',docs:''},{qn:'22',req:'Abrasive wheels are stored, handled, and inspected prior to mounting.',docs:''},{qn:'23',req:'All abrasive wheels are mounted between flanges and with suitable blotters, and mounting rings are inspected.',docs:''},{qn:'24',req:'All abrasive grinding and cutting wheels, and machines, are properly guarded.',docs:''},{qn:'25',req:'Guards for portable abrasive grinding tools are properly designed, constructed, and installed.',docs:''},{qn:'26',req:'All guards for abrasive wheels are strong enough to resist the effects of a bursting wheel.',docs:''},{qn:'27',req:'The facility uses guards for all abrasive disc wheels, including angle head or vertical portable grinders.',docs:''},{qn:'28',req:'The facility uses hood guards for all abrasive snagging machines.',docs:''},{qn:'29',req:'The facility uses proper guards for all milling machines, including column and knee types.',docs:''},{qn:'30',req:'If the facility uses lathes, all lathes are properly guarded.',docs:''},{qn:'31',req:'The facility uses guards for all gear and sprocket drives exposed to the work area.',docs:''},{qn:'32',req:'The facility uses guards for all drum, belt, and chain drives that expose employees to injury.',docs:''},{qn:'33',req:'The facility ensures guards for mechanical power-transmission apparatus are properly designed, constructed, and installed.',docs:''},{qn:'34',req:'Guards used for mechanical power transmission are not separated by more than one-half inch from the moving part.',docs:''},{qn:'35',req:'The facility ensures all pulleys are properly guarded.',docs:''},{qn:'36',req:'The facility ensures all belts and belt drives are properly guarded.',docs:''},{qn:'37',req:'The facility ensures all shafting is properly guarded.',docs:''},{qn:'38',req:'The facility ensures all keys and set screws are properly guarded.',docs:''},{qn:'39',req:'The facility ensures all exposed gears are properly guarded.',docs:''},{qn:'40',req:'The facility ensures all sprockets and chains are properly guarded.',docs:''},{qn:'41',req:'The facility ensures all spindles are properly guarded.',docs:''},{qn:'42',req:'The facility ensures that flywheels are properly guarded.',docs:''},{qn:'43',req:'The facility ensures all hydraulic and pneumatic machinery guards meet applicable requirements.',docs:''},{qn:'44',req:'When compressed air is used for cleaning, the pressure is reduced to below 30 psi when cleaning with a nozzle that is not dead-ended.',docs:''},{qn:'45',req:'Suitable chip guarding and personal protective equipment are provided and used when compressed air is used for cleaning.',docs:''},{qn:'46',req:'The facility ensures all portable air tools are properly maintained and secured for safe use, such as ensuring they remain on or are anchored to foundations.',docs:''},{qn:'47',req:'If the facility uses prime-mover guards, such as flywheels or rods, it ensures they are properly guarded.',docs:''},{qn:'48',req:'The facility ensures mechanical power-transmission apparatus shafting is properly installed and guarded.',docs:''},{qn:'49',req:'If the facility uses boltheading or rivet making equipment, it ensures they are properly installed, including ensuring the boltheading or rivet making is provided with a means for locking out the power.',docs:''},{qn:'50',req:'If the facility uses other forging equipment, such as billet shears and saws, it ensures the equipment is safely used, such as ensuring lockout devices are provided.',docs:''},{qn:'51',req:'The facility ensures mechanical power-transmission apparatus pulleys are properly guarded and operated.',docs:''},{qn:'52',req:'The facility ensures all mechanical power-transmission apparatus cone-pulley belts and belt tighteners are properly guarded.',docs:''},{qn:'53',req:'The facility ensures all mechanical power-transmission apparatus belt-and-pulley systems are properly guarded.',docs:''},{qn:'54',req:'The facility ensures all mechanical power-transmission apparatus chain-and-sprocket drives are properly guarded.',docs:''},{qn:'55',req:'The facility ensures all mechanical power-transmission apparatus gears are properly guarded.',docs:''},{qn:'56',req:'The facility ensures all mechanical power-transmission apparatus exposed machinery parts including flywheels, cranks, connecting rods, wrist pins, tail rods, or extension piston rods are properly guarded.',docs:''},{qn:'57',req:'The facility ensures all mechanical power-transmission apparatus projecting shaft ends are guarded.',docs:''},{qn:'58',req:'The facility ensures all mechanical power-transmission apparatus shafting under bench machines is properly guarded.',docs:''},{qn:'59',req:'The facility ensures all mechanical power-transmission apparatus used with machines mounted on floor and plank runs comply with applicable requirements.',docs:''},{qn:'60',req:'The facility ensures all mechanical power-transmission apparatus inclined and vertical belts comply with applicable guarding requirements.',docs:''},{qn:'61',req:'The facility ensures all mechanical power-transmission apparatus horizontal belts and ropes comply with applicable guarding requirements.',docs:''},{qn:'62',req:'The facility ensures all mechanical power-transmission apparatus overhead horizontal belts are properly guarded.',docs:''},{qn:'63',req:'The facility ensures all mechanical power-transmission apparatus spur, bevel, and helical gears meet applicable guarding requirements.',docs:''},{qn:'64',req:'The facility ensures all mechanical power-transmission apparatus worm gears meet applicable guarding requirements.',docs:''},{qn:'65',req:'The facility ensures all mechanical power-transmission apparatus gears provided with a housing that totally encloses them do not require additional guarding.',docs:''},{qn:'66',req:'The facility ensures all mechanical power-transmission apparatus friction drives meet applicable guarding requirements.',docs:''},{qn:'67',req:'The facility ensures all mechanical power-transmission apparatus keys, setscrews, and other projections that might constitute a hazard are removed or made safe.',docs:''},{qn:'68',req:'The facility ensures all mechanical power-transmission apparatus collars that are keyed or pinned comply with applicable requirements.',docs:''},{qn:'69',req:'The facility ensures all mechanical power-transmission apparatus revolving barrels, containers, and drums are guarded by an enclosure interlocked with the drive mechanism.',docs:''},{qn:'70',req:'The facility ensures all mechanical power-transmission apparatus clutches, cutoff couplings, or clutch pulleys having projecting parts are guarded.',docs:''},{qn:'71',req:'The facility ensures all mechanical power-transmission apparatus belt shifters and shipper poles comply with applicable safety requirements.',docs:''},{qn:'72',req:'The facility ensures all mechanical power-transmission apparatus counterweights meet applicable requirements.',docs:''},{qn:'73',req:'The facility ensures abrasive wheels are properly mounted, such as ensuring contact surfaces are flat and free of foreign matter.',docs:''},{qn:'74',req:'The facility properly guards abrasive wheel machinery, such as guarding cup wheels and not exceeding maximum exposure angles.',docs:''},{qn:'75',req:'If the facility mounts abrasive wheels between flanges, it ensures the flanges are properly used and maintained, including ensuring the flanges are not less than 1/3 the diameter of the wheel.',docs:''},{qn:'76',req:'If the facility uses off-hand grinding machines, it uses work rests to support the work.',docs:''},{qn:'77',req:'The facility only uses abrasive wheels on machines provided with safety guards, except in listed situations.',docs:''},{qn:'78',req:'The facility ensures the safety guards on machines that use abrasive wheels cover the spindle end, nut, and flange projections.',docs:''},{qn:'79',req:'The facility ensures mill installations are installed so that the top of the operating roll is not less than 50 inches above the level on which the operator stands.',docs:''},{qn:'80',req:'The facility ensures each mill is provided with at least one emergency stopping device that can break the nip of the front rolls.',docs:''},{qn:'81',req:'The facility ensures safety trip equipment used for mills is properly maintained.',docs:''},{qn:'82',req:'The facility ensures each calendar is equipped with safety devices that meet applicable requirements.',docs:''},{qn:'83',req:'The facility ensures rubber mills and calenders are equipped with proper safety trip devices.',docs:''},{qn:'84',req:'The facility ensures provisions are made to prevent machines from being inadvertently started while being serviced or maintained.',docs:''},{qn:'85',req:'The facility provides and uses suitable devices to prevent accidental movement of machines to protect employees working on or around the machine.',docs:''},{qn:'86',req:'The facility ensures that adequate clearance is available between pieces of equipment and around all machines and that the operating space of each machine is well-defined.',docs:''},{qn:'87',req:'The facility ensures all machines on the floor are level, stable, and anchored per applicable requirements.',docs:''},{qn:'88',req:'The facility ensures all machines are maintained in proper condition and do not present a hazard.',docs:''},{qn:'89',req:'If the facility uses any vertical band saw, it ensures the band saw is properly guarded.',docs:''},{qn:'90',req:'If the facility uses any circular saw, it ensures the circular saw is properly guarded.',docs:''},{qn:'91',req:'If the facility uses any jointer, it ensures the jointer is properly guarded and has automatic feeding devices or handles that do not require the operator\'s hand to be in a dangerous position.',docs:''},{qn:'92',req:'If the facility uses any woodworking machine, it ensures the machine is properly guarded and has exhaust hoods.',docs:''},{qn:'93',req:'If the facility uses woodworking machinery, it inspects and maintains each machine and machine parts to ensure safe and proper performance, or removes the part from service.',docs:'*Woodworking machinery inspection records'},{qn:'94',req:'The facility ensures all mechanical power-transmission apparatus keys, setscrews, and other projections are properly guarded.',docs:''},{qn:'95',req:'The facility ensures all mechanical power-transmission apparatus collars and couplings do not project or present hazards.',docs:''},{qn:'96',req:'The facility ensures all mechanical power-transmission apparatus bearings and facilities for oiling are securely fastened.',docs:''},{qn:'97',req:'The facility ensures all mechanical power-transmission apparatus clutches, cutoff couplings, and clutch pulleys are properly guarded.',docs:''},{qn:'98',req:'The facility ensures all mechanical power-transmission apparatus stoppers, poles, perches, and fasteners are properly guarded.',docs:''},{qn:'99',req:'The facility ensures all mechanical power-transmission apparatus guards are made of approved materials.',docs:''},{qn:'100',req:'The facility ensures all mechanical power-transmission apparatus guards meet minimum material and dimension requirements.',docs:''}],ppe:[{qn:'1',req:'The facility assesses the workplace to determine if hazards are present, or are likely to be present, which necessitate the use of personal protective equipment (PPE).',docs:'*Personal Protective Equipment assessment'},{qn:'2',req:'The facility provides training to affected employees relating to PPE.',docs:'*Personal Protective Equipment assessment\n*Employee training records'},{qn:'3',req:'The facility ensures that defective or damaged PPE is not used.',docs:''},{qn:'4',req:'If the facility determines that hazards are present or likely to be present, it selects proper personal protective equipment (PPE) for use by each affected employee and communicates the selection to such employees.',docs:'*Personal Protective Equipment assessment'},{qn:'5',req:'The facility ensures that each employee uses appropriate eye or face protection when exposed to eye or face hazards from flying particles, molten metal, liquid chemicals, acids or caustic liquids, chemical gases or vapors, or potentially injurious light radiation.',docs:''},{qn:'6',req:'The facility ensures that each employee uses appropriate protection for the feet when there is danger of foot injuries due to falling or rolling objects, objects piercing the sole, or when the employee\'s feet are exposed to electrical hazards.',docs:''},{qn:'7',req:'The facility ensures that each employee uses appropriate protection for the head when there is danger of head injury from impact and penetration from falling and flying objects or from electrical shock and burns.',docs:''},{qn:'8',req:'The facility ensures that each employee uses appropriate protection for the hands when there is danger of hand injuries.',docs:''},{qn:'9',req:'The facility ensures that appropriate electrical protective equipment is provided and used.',docs:''},{qn:'10',req:'The facility ensures that appropriate electrical protective equipment is properly maintained.',docs:''},{qn:'11',req:'The facility ensures that appropriate electrical protective equipment is periodically tested.',docs:''},{qn:'12',req:'The facility ensures that each affected employee uses equipment that provides protection from process or environment, temperature extremes, inadequate oxygen environments, drowning, skin absorption or contact with harmful substances, noise, falling objects, sharp objects or rough surfaces, rolling or pinching objects, electrical hazards, vehicle traffic, or other identified hazards.',docs:''},{qn:'13',req:'If the facility uses respirators, it develops and implements a written respiratory protection program with required worksite-specific procedures and elements for required respirator use.',docs:'*Respiratory Protection Program'},{qn:'14',req:'If the facility uses respirators, it selects and provides appropriate respirators.',docs:'*Respiratory Protection Program'},{qn:'15',req:'If the facility uses respirators, employees are medically evaluated before being fit tested.',docs:'*Respiratory Protection Program\n*Medical evaluation records'},{qn:'16',req:'If the facility uses respirators, employees are fit tested before use in the workplace.',docs:'*Respiratory Protection Program\n*Fit test records'},{qn:'17',req:'If the facility uses respirators, employees are provided with information on respirator use, limitations, and maintenance.',docs:'*Respiratory Protection Program\n*Employee training records'},{qn:'18',req:'If the facility uses respirators, it ensures that all filters, cartridges, and canisters used are labeled and color-coded with the NIOSH approval label and that the label is not removed and remains legible.',docs:''},{qn:'19',req:'If the facility uses respirators, it trains employees who are required to use respirators.',docs:'*Respiratory Protection Program\n*Respiratory training records'},{qn:'20',req:'If the facility uses respirators, it retrains employees who are required to use respirators annually or more often when necessary.',docs:'*Respiratory Protection Program\n*Respiratory training records'}],welding:[{qn:'1',req:'If welding, cutting, and hot work activities occur at the facility, the facility takes adequate precautions to provide fire prevention and protection in welding or cutting work.',docs:'*Employee training records\n*Hot work permits'},{qn:'2',req:'If the facility engages in oxygen-fuel gas welding and cutting, it trains workers in charge of the oxygen or fuel-gas supply equipment and judges them competent before they are left in charge.',docs:'*Employee training records'},{qn:'3',req:'If welding, cutting, and hot work activities occur at the facility and the object to be welded or cut cannot be moved and all the fire hazards cannot be removed, the facility relocates all combustibles at least 35 feet from the work site, where practicable.',docs:'*Hot work permits'},{qn:'4',req:'If welding, cutting, and hot work activities occur at the facility and the object to be welded or cut cannot be moved and all the fire hazards cannot be removed, the facility ensures combustibles are shielded with covers.',docs:'*Hot work permits'},{qn:'5',req:'If welding, cutting, and hot work activities occur at the facility and the object to be welded or cut cannot be moved and all the fire hazards cannot be removed, the facility takes precautions regarding combustible floors.',docs:'*Hot work permits'},{qn:'6',req:'If welding, cutting, and hot work activities occur at the facility and the object to be welded or cut cannot be moved and all the fire hazards cannot be removed, the facility ensures openings or cracks in walls, floors, or ducts within 35 feet of the work are covered to prevent the passage of sparks to adjacent areas.',docs:'*Hot work permits'},{qn:'7',req:'If welding, cutting, and hot work activities occur at the facility and the object to be welded or cut cannot be moved and all the fire hazards cannot be removed, the facility assigns fire watchers in locations where other than a minor fire might develop or other applicable conditions exist.',docs:'*Hot work permits\n*Fire watchers training records'},{qn:'8',req:'If welding, cutting, and hot work activities occur at the facility and the object to be welded or cut cannot be moved, all the fire hazards cannot be removed, and there are floor openings or cracks in the flooring that cannot be closed, the facility takes adequate precautions so no readily combustible materials on the floor below will be exposed to sparks that might drop through the floor.',docs:'*Hot work permits'},{qn:'9',req:'If welding, cutting, and hot work activities occur at the facility and the object to be welded or cut cannot be moved and all the fire hazards cannot be removed, the facility ensures the area is inspected by the individual responsible for authorizing cutting and welding operations to ensure that all precautions have been taken.',docs:'*Hot work permits'},{qn:'10',req:'If welding, cutting, and hot work activities occur at the facility, the facility has a written fire prevention and protection program.',docs:'*Hot work permits\n*Employee training records'},{qn:'11',req:'If welding, cutting, and hot work activities occur at the facility, the facility designates an individual responsible for authorizing cutting and welding equipment on its property.',docs:'*Employee training records\n*Hot work permits'},{qn:'12',req:'If welding, cutting, and hot work activities occur on used drums, barrels, tanks, or other containers, before any welding, cutting, or other hot work is performed, the facility cleans the used drums, barrels, tanks, or other containers of any flammable materials or any substances that, when subjected to heat, might produce flammable or toxic vapors.',docs:'*Hot work permits'},{qn:'13',req:'If welding, cutting, and hot work activities occur at the facility, the facility ensures that appropriate safety precautions for welders and assistants are taken.',docs:''},{qn:'14',req:'If welding, cutting, and hot work activities occur at the facility, the facility vents all hollow spaces, cavities, or containers so air or gases can escape before preheating, cutting, or welding occurs.',docs:'*Hot work permits'},{qn:'15',req:'If welding, cutting, and hot work activities occur at the facility, when welding or cutting is done near sprinklers, the facility does not render the sprinklers inoperative during welding or cutting operations in areas where fire could develop.',docs:'*Hot work permits'},{qn:'16',req:'If the facility engages in oxygen-fuel gas welding and cutting, it takes the proper precautions for handling manifold cylinders and piping to meet applicable requirements.',docs:''},{qn:'17',req:'If the facility engages in oxygen-fuel gas welding and cutting, it takes the proper precautions regarding fuel gas cylinders to meet applicable requirements.',docs:''},{qn:'18',req:'If the facility engages in oxygen-fuel gas welding and cutting, it takes the proper precautions regarding hose and regulators to meet applicable requirements.',docs:''},{qn:'19',req:'If the facility engages in oxygen-fuel gas welding and cutting, it takes the proper precautions regarding welding torch operations to meet applicable requirements.',docs:''},{qn:'20',req:'If the facility engages in oxygen-fuel gas welding and cutting, it takes the proper precautions regarding pressurized containers used in welding to meet applicable requirements.',docs:''},{qn:'21',req:'If the facility engages in arc welding and cutting, it trains workers designated to operate arc welding equipment.',docs:'*Employee training records'},{qn:'22',req:'If the facility engages in arc welding and cutting, it takes additional process-specific safety precautions, such as ensuring there are no leaks of cooling water, shielding gas, or engine fuel.',docs:''},{qn:'23',req:'If the facility engages in resistance welding, it takes additional process-specific safety precautions, such as ensuring the equipment has a safety-type disconnecting switch.',docs:''},{qn:'24',req:'If the facility engages in resistance welding, it trains workers designated to operate resistance welding equipment.',docs:'*Employee training records'}],confined:[{qn:'1',req:'The facility has been evaluated for the presence of Permit-Required Confined Spaces.',docs:'*Permit-Required Confined Space program'},{qn:'2',req:'When there are changes in the use or configuration of a non-permit confined space that might increase the hazards to entrants, the facility reevaluates the space and, if necessary, reclassifies it as a permit-required confined space.',docs:'*Permit-Required Confined Space program'},{qn:'3',req:'How',docs:'*Permit-Required Confined Space program'},{qn:'4',req:'If facility employees enter confined spaces, the facility has a current written permit-required confined space program.',docs:'*Permit-Required Confined Space program'},{qn:'5',req:'Entry into permit-required confined spaces is allowed only upon the issuance of an entry permit by a supervisor.',docs:'*Confined Space permits'},{qn:'6',req:'The facility retains all Confined Space permits for at least one year.',docs:'*Confined Space permits'},{qn:'7',req:'The facility ensures that the entry supervisor is responsible for determining that entry conditions are met before allowing entry and ensuring that adequate safety measures are in place for confined space entry.',docs:'*Permit-Required Confined Space program'},{qn:'8',req:'If the facility allows contractors to enter confined spaces, it informs the contractors about the hazards of the permit-required confined space.',docs:'*Permit-Required Confined Space program'},{qn:'9',req:'If the facility allows contractors to enter confined spaces, it takes the appropriate measures to ensure contractor safety.',docs:'*Permit-Required Confined Space program'},{qn:'10',req:'The facility properly trains all employees involved in the entry of a confined space for their role in the entry.',docs:'*Permit-Required Confined Space program\n*Employee training records'}]};
+</script>
+<script>
+
+const SK = 'fsGapApp2';
+const TOPICS = [
+  {key:'loto',    label:'LOTO',             icon:'\uD83D\uDD12'},
+  {key:'fall',    label:'Fall Protection',  icon:'\uD83E\uDDBA'},
+  {key:'forklift',label:'Forklift',         icon:'\uD83D\uDE9C'},
+  {key:'lifting', label:'Lifting Equip',    icon:'\uD83C\uDFD7\uFE0F'},
+  {key:'machine', label:'Machine Guarding', icon:'\u2699\uFE0F'},
+  {key:'ppe',     label:'PPE',              icon:'\uD83E\uDDE4'},
+  {key:'welding', label:'Welding/Hot Work', icon:'\uD83D\uDD25'},
+  {key:'confined',label:'Confined Space',   icon:'\uD83D\uDD73\uFE0F'}
+];
+let S = {};
+function loadS(){try{const s=localStorage.getItem(SK);if(s)S=JSON.parse(s);}catch(e){}TOPICS.forEach(t=>{if(!S[t.key])S[t.key]={};});if(!S.si)S.si={};}
+function saveS(){collectVals();localStorage.setItem(SK,JSON.stringify(S));const d=document.getElementById('saveDot');d.classList.add('saving');setTimeout(()=>d.classList.remove('saving'),800);}
+let _st=null;function autoSave(){clearTimeout(_st);_st=setTimeout(saveS,600);}
+function collectVals(){
+  const si={};
+  ['client','date','location','rep','contact'].forEach(f=>{const el=document.getElementById('si-'+f);if(el)si[f]=el.value;});
+  S.si=si;
+  TOPICS.forEach(t=>{
+    if(!S[t.key])S[t.key]={};
+    (QUESTIONS[t.key]||[]).forEach(q=>{
+      const id=t.key+'_'+q.qn;
+      const chk=document.querySelector('input[name="'+id+'"]:checked');
+      if(chk){if(!S[t.key][q.qn])S[t.key][q.qn]={};S[t.key][q.qn].answer=chk.value;}
+      const ff={title:v(id+'_title'),desc:v(id+'_desc'),rec:v(id+'_rec'),party:v(id+'_party'),due:v(id+'_due')};
+      if(S[t.key][q.qn])Object.assign(S[t.key][q.qn],ff);
+    });
+  });
+}
+function v(id){const el=document.getElementById(id);return el?el.value:'';}
+function restoreVals(){
+  const si=S.si||{};
+  ['client','date','location','rep','contact'].forEach(f=>{const el=document.getElementById('si-'+f);if(el&&si[f])el.value=si[f];});
+  TOPICS.forEach(t=>{
+    Object.entries(S[t.key]||{}).forEach(([qn,qd])=>{
+      if(qd&&qd.answer){
+        const r=document.querySelector('input[name="'+t.key+'_'+qn+'"][value="'+qd.answer+'"]');
+        if(r){r.checked=true;const c=r.closest('.q-card');if(c)c.className='q-card '+qd.answer;
+          if(qd.answer==='no'){const ff=document.getElementById(t.key+'_'+qn+'_ff');if(ff)ff.classList.add('show');}
+          ['title','desc','rec','party','due'].forEach(f=>{const el=document.getElementById(t.key+'_'+qn+'_'+f);if(el&&qd[f])el.value=qd[f];});
+        }
+      }
+    });
+  });
+}
+function showSection(n){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('section-'+n).classList.add('active');
+  document.querySelector('[data-section="'+n+'"]').classList.add('active');
+  if(n==='dashboard')updDash();
+  if(n==='actions')updActions();
+  if(n==='report')updReport();
+  window.scrollTo(0,0);
+}
+function selTopic(key){
+  document.querySelectorAll('.topic-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.topic-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelector('.topic-btn[data-key="'+key+'"]').classList.add('active');
+  document.getElementById('panel-'+key).classList.add('active');
+}
+function goTopic(key){showSection('assessment');selTopic(key);}
+function handleAns(tk,qn,val,el){
+  const id=tk+'_'+qn;
+  const card=el.closest('.q-card');
+  card.className='q-card '+val;
+  const ff=document.getElementById(id+'_ff');
+  if(val==='no'){ff.classList.add('show');}
+  else{ff.classList.remove('show');if(S[tk]&&S[tk][qn])S[tk][qn]={answer:val};}
+  if(!S[tk])S[tk]={};if(!S[tk][qn])S[tk][qn]={};
+  S[tk][qn].answer=val;
+  autoSave();updDashLive();
+}
+function getStats(){
+  let tC=0,tG=0,tN=0;const bt={};
+  TOPICS.forEach(t=>{let c=0,g=0,n=0;
+    (QUESTIONS[t.key]||[]).forEach(q=>{const a=(S[t.key]||{})[q.qn];const ans=a?a.answer:'';
+      if(ans==='yes'){c++;tC++;}else if(ans==='no'){g++;tG++;}else if(ans==='na'){n++;tN++;}
+    });
+    bt[t.key]={c,g,n,tot:(QUESTIONS[t.key]||[]).length};
+  });
+  return{tC,tG,tN,bt};
+}
+function updDashLive(){const{tC,tG,tN}=getStats();document.getElementById('dc').textContent=tC;document.getElementById('dg').textContent=tG;document.getElementById('dn').textContent=tN;const a=tC+tG+tN;const p=a>0?Math.round(tC/a*100):0;document.getElementById('dpct').textContent=a>0?p+'%':'\u2014';document.getElementById('dbar').style.width=p+'%';}
+function updDash(){
+  const{tC,tG,tN,bt}=getStats();
+  document.getElementById('dc').textContent=tC;
+  document.getElementById('dg').textContent=tG;
+  document.getElementById('dn').textContent=tN;
+  const a=tC+tG+tN;const p=a>0?Math.round(tC/a*100):0;
+  document.getElementById('dpct').textContent=a>0?p+'%':'\u2014';
+  document.getElementById('dbar').style.width=p+'%';
+  const tot=Object.values(QUESTIONS).reduce((s,v)=>s+v.length,0);
+  document.getElementById('dans').textContent=a>0?a+' of '+tot+' questions answered':'No questions answered yet';
+  document.getElementById('tBreak').innerHTML=TOPICS.map(t=>{
+    const s=bt[t.key];const an=s.c+s.g+s.n;
+    return '<div class="topic-row" onclick="goTopic(\''+t.key+'\')"><span style="font-size:18px">'+t.icon+'</span><span class="topic-name">'+t.label+'</span><div class="topic-pills">'+(s.c?'<span class="pill c">\u2713 '+s.c+'</span>':'')+(s.g?'<span class="pill g">\u2717 '+s.g+'</span>':'')+(s.n?'<span class="pill n">\u2014 '+s.n+'</span>':'')+(an===0?'<span style="font-size:11px;color:#aaa">Not started</span>':'')+'</div><span style="font-size:11px;color:#aaa">'+an+'/'+s.tot+'</span><button class="go-btn" onclick="event.stopPropagation();goTopic(\''+t.key+'\')">Go &#x2192;</button></div>';
+  }).join('');
+  const finds=Object.entries(S).filter(([k])=>k!=='si').flatMap(([,v])=>Object.values(v).filter(q=>q&&q.answer==='no'));
+  const b=document.getElementById('aBadge');b.textContent=finds.length;b.style.display=finds.length>0?'inline-block':'none';
+}
+function updActions(){
+  collectVals();const rows=[];
+  TOPICS.forEach(t=>{(QUESTIONS[t.key]||[]).forEach(q=>{const qd=(S[t.key]||{})[q.qn]||{};if(qd.answer==='no')rows.push({tl:t.label,...qd,qn:q.qn});});});
+  const tbody=document.getElementById('aBody');const noA=document.getElementById('noAct');
+  if(!rows.length){tbody.innerHTML='';noA.style.display='block';return;}
+  noA.style.display='none';
+  const today=new Date().toISOString().split('T')[0];
+  tbody.innerHTML=rows.map(r=>{let st='<span class="st-open">Open</span>';
+    if(r.due){if(r.due<today)st='<span class="st-over">Overdue</span>';else{const d=Math.floor((new Date(r.due)-new Date(today))/86400000);if(d<=14)st='<span class="st-due">Due Soon</span>';}}
+    return '<tr><td style="font-weight:700;white-space:nowrap">'+r.tl+'</td><td style="font-weight:700">'+r.qn+'</td><td>'+(r.title||'<span style="color:#aaa;font-style:italic">No title</span>')+'</td><td>'+(r.rec||'&#8212;')+'</td><td>'+(r.party||'&#8212;')+'</td><td>'+(r.due||'&#8212;')+'</td><td>'+st+'</td></tr>';
+  }).join('');
+}
+function copyActions(){
+  collectVals();let txt='FORWARD SAFETY - ACTION TRACKER\n'+'='.repeat(60)+'\n\n';
+  const si=S.si||{};if(si.client)txt+='Facility: '+si.client+'\n';if(si.date)txt+='Date: '+si.date+'\n';txt+='\n';
+  TOPICS.forEach(t=>{const finds=(QUESTIONS[t.key]||[]).filter(q=>(S[t.key]||{})[q.qn]&&(S[t.key][q.qn]).answer==='no');
+    if(finds.length){txt+=t.label.toUpperCase()+'\n'+'-'.repeat(40)+'\n';
+      finds.forEach(q=>{const qd=S[t.key][q.qn]||{};txt+='Q'+q.qn+': '+(qd.title||'Finding')+'\n';if(qd.rec)txt+='  Rec: '+qd.rec+'\n';if(qd.party)txt+='  Responsible: '+qd.party+'\n';if(qd.due)txt+='  Due: '+qd.due+'\n\n';});
+    }});
+  navigator.clipboard.writeText(txt).then(()=>alert('Copied!'));
+}
+function updReport(){
+  collectVals();const si=S.si||{};const{tC,tG,tN,bt}=getStats();const a=tC+tG+tN;const p=a>0?Math.round(tC/a*100):0;
+  let h='<div class="rs"><h2>Assessment Summary</h2><table style="width:100%;font-size:13px;margin-bottom:12px">';
+  if(si.client)h+='<tr><td style="font-weight:700;width:40%;padding:3px 0">Client/Facility</td><td>'+si.client+'</td></tr>';
+  if(si.date)h+='<tr><td style="font-weight:700;padding:3px 0">Assessment Date</td><td>'+si.date+'</td></tr>';
+  if(si.location)h+='<tr><td style="font-weight:700;padding:3px 0">Location</td><td>'+si.location+'</td></tr>';
+  if(si.rep)h+='<tr><td style="font-weight:700;padding:3px 0">FS Representative</td><td>'+si.rep+'</td></tr>';
+  if(si.contact)h+='<tr><td style="font-weight:700;padding:3px 0">Facility Contact</td><td>'+si.contact+'</td></tr>';
+  h+='</table><div class="r-sum"><div class="r-sum-card c"><div class="rn">'+tC+'</div><div class="rl">Compliant</div></div><div class="r-sum-card g"><div class="rn">'+tG+'</div><div class="rl">Gaps</div></div><div class="r-sum-card n"><div class="rn">'+tN+'</div><div class="rl">N/A</div></div></div>';
+  h+='<div style="text-align:center;font-size:24px;font-weight:900;color:var(--green);margin:8px 0">'+(a>0?p+'% Compliant':'No responses yet')+'</div></div>';
+  h+='<div class="rs"><h2>Results by Topic</h2>';
+  h+=TOPICS.map(t=>{const s=bt[t.key];const an=s.c+s.g+s.n;const tp=an>0?Math.round(s.c/an*100):0;return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f0f0f0"><span style="font-size:16px">'+t.icon+'</span><span style="min-width:140px;font-weight:600;font-size:13px">'+t.label+'</span><div style="flex:1"><div style="height:6px;background:#e0e0e0;border-radius:3px;overflow:hidden"><div style="height:100%;width:'+tp+'%;background:var(--green);border-radius:3px"></div></div></div><span style="font-size:12px;'+(s.g>0?'color:#c0392b;font-weight:700':'')+'">'+(s.c+'\u2713 '+s.g+'\u2717 '+s.n+'\u2014')+'</span></div>';}).join('');
+  h+='</div>';
+  let hf=false;
+  TOPICS.forEach(t=>{
+    const finds=(QUESTIONS[t.key]||[]).filter(q=>(S[t.key]||{})[q.qn]&&S[t.key][q.qn].answer==='no');
+    if(finds.length){if(!hf){h+='<div class="rs"><h2>Gap Findings</h2>';hf=true;}
+      h+='<h3 style="margin:16px 0 8px;font-size:14px;color:var(--navy)">'+t.icon+' '+t.label+'</h3>';
+      finds.forEach(q=>{const qd=S[t.key][q.qn]||{};h+='<div class="fi"><h4>Q'+q.qn+': '+(qd.title||q.req.substring(0,80)+'...')+'</h4><div class="fi-m">'+(qd.party?'Responsible: '+qd.party:'')+(qd.due?' | Due: '+qd.due:'')+'</div>'+(qd.desc?'<div class="fi-d"><strong>Finding:</strong> '+qd.desc+'</div>':'')+(qd.rec?'<div class="fi-d"><strong>Recommendation:</strong> '+qd.rec+'</div>':'')+'</div>';});
+    }});
+  if(hf)h+='</div>';
+  document.getElementById('rContent').innerHTML=h;
+}
+function copyReport(){
+  collectVals();const si=S.si||{};const{tC,tG,tN,bt}=getStats();const a=tC+tG+tN;const p=a>0?Math.round(tC/a*100):0;
+  let txt='FORWARD SAFETY - GAP ASSESSMENT REPORT\n'+'='.repeat(60)+'\n\n';
+  if(si.client)txt+='Facility: '+si.client+'\n';if(si.date)txt+='Date: '+si.date+'\n';if(si.location)txt+='Location: '+si.location+'\n';if(si.rep)txt+='FS Rep: '+si.rep+'\n';if(si.contact)txt+='Contact: '+si.contact+'\n';
+  txt+='\nSUMMARY\n'+'-'.repeat(40)+'\nCompliant: '+tC+' | Gaps: '+tG+' | N/A: '+tN+'\nCompliance: '+(a>0?p+'%':'N/A')+'\n\nBY TOPIC\n'+'-'.repeat(40)+'\n';
+  TOPICS.forEach(t=>{const s=bt[t.key];txt+=t.label+': '+s.c+' Compliant, '+s.g+' Gaps, '+s.n+' N/A\n';});
+  txt+='\nFINDINGS\n'+'='.repeat(60)+'\n';
+  TOPICS.forEach(t=>{const finds=(QUESTIONS[t.key]||[]).filter(q=>(S[t.key]||{})[q.qn]&&S[t.key][q.qn].answer==='no');
+    if(finds.length){txt+='\n'+t.label.toUpperCase()+'\n'+'-'.repeat(40)+'\n';
+      finds.forEach(q=>{const qd=S[t.key][q.qn]||{};txt+='Q'+q.qn+': '+(qd.title||'Finding')+'\n  Req: '+q.req+'\n';if(qd.desc)txt+='  Finding: '+qd.desc+'\n';if(qd.rec)txt+='  Rec: '+qd.rec+'\n';if(qd.party)txt+='  Responsible: '+qd.party+'\n';if(qd.due)txt+='  Due: '+qd.due+'\n\n';});
+    }});
+  navigator.clipboard.writeText(txt).then(()=>alert('Copied!'));
+}
+function buildUI(){
+  const sel=document.getElementById('tSel');const pan=document.getElementById('tPanels');
+  sel.innerHTML=TOPICS.map((t,i)=>'<button class="topic-btn'+(i===0?' active':'')+'" data-key="'+t.key+'" onclick="selTopic(\''+t.key+'\')">'+t.icon+' '+t.label+'</button>').join('');
+  pan.innerHTML=TOPICS.map((t,i)=>{
+    const qs=QUESTIONS[t.key]||[];
+    const qh=qs.map(q=>{const id=t.key+'_'+q.qn;
+      return '<div class="q-card" id="card_'+id+'"><div class="q-header"><span class="q-num">Q'+q.qn+'</span><div><div class="q-text">'+q.req+'</div>'+(q.docs?'<div class="q-docs">\uD83D\uDCC4 '+q.docs+'</div>':'')+'</div></div><div class="q-radios"><label class="q-radio-label yes-opt"><input type="radio" name="'+id+'" value="yes" onchange="handleAns(\''+t.key+'\',\''+q.qn+'\',\'yes\',this)"><span>&#x2713; Yes</span></label><label class="q-radio-label no-opt"><input type="radio" name="'+id+'" value="no" onchange="handleAns(\''+t.key+'\',\''+q.qn+'\',\'no\',this)"><span>&#x2717; No</span></label><label class="q-radio-label na-opt"><input type="radio" name="'+id+'" value="na" onchange="handleAns(\''+t.key+'\',\''+q.qn+'\',\'na\',this)"><span>&#8212; N/A</span></label></div><div class="finding-form" id="'+id+'_ff"><div class="form-row"><div class="form-group" style="flex:100%"><label>Finding Title</label><input type="text" id="'+id+'_title" placeholder="Brief title for this gap" oninput="autoSave()"></div></div><div class="form-row"><div class="form-group" style="flex:100%"><label>Finding Description / Comments</label><textarea id="'+id+'_desc" placeholder="Describe the gap or non-compliance observed..." oninput="autoSave()"></textarea></div></div><div class="form-row"><div class="form-group" style="flex:100%"><label>Recommendation</label><textarea id="'+id+'_rec" placeholder="Recommended corrective action..." oninput="autoSave()"></textarea></div></div><div class="form-row"><div class="form-group"><label>Responsible Party</label><input type="text" id="'+id+'_party" placeholder="Who is responsible?" oninput="autoSave()"></div><div class="form-group"><label>Required Close-out Date</label><input type="date" id="'+id+'_due" oninput="autoSave()"></div></div></div></div>';
+    }).join('');
+    return '<div class="topic-panel'+(i===0?' active':'')+'" id="panel-'+t.key+'"><div class="section-badge"><span>'+t.icon+' '+t.label+' &#8212; OSHA Compliance</span><span>'+qs.length+' questions</span></div>'+qh+'</div>';
+  }).join('');
+}
+document.addEventListener('DOMContentLoaded',function(){
+  loadS();buildUI();restoreVals();updDash();
+  const d=document.getElementById('si-date');if(d&&!d.value)d.value=new Date().toISOString().split('T')[0];
+});
+
+</script>
+</body>
+</html>
