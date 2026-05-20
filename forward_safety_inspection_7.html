@@ -498,6 +498,53 @@
   }
   .method-row:last-child { border-bottom: none; }
   .method-val { font-weight: 600; color: var(--navy); min-width: 30px; }
+
+  /* ── IMAGE EDITOR MODAL ── */
+  .img-editor-overlay {
+    display: none; position: fixed; inset: 0; z-index: 1000;
+    background: rgba(0,0,0,0.92); flex-direction: column;
+  }
+  .img-editor-overlay.open { display: flex; }
+  .img-editor-toolbar {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 10px; background: #1a1a2e; flex-wrap: wrap;
+    border-bottom: 1px solid #333;
+  }
+  .img-editor-toolbar .ed-btn {
+    padding: 7px 12px; border-radius: 7px; border: none;
+    font-size: 12px; font-weight: 700; cursor: pointer;
+    font-family: inherit; transition: all .15s;
+  }
+  .ed-tool { background: #2d2d2d; color: #ccc; }
+  .ed-tool.active { background: #c9a227; color: #1a1a2e; }
+  .ed-btn-save { background: #27ae60; color: white; margin-left: auto; }
+  .ed-btn-cancel { background: #444; color: #ccc; }
+  .ed-btn-clear { background: #e74c3c; color: white; }
+  .ed-color-row { display: flex; gap: 4px; align-items: center; }
+  .ed-color { width: 22px; height: 22px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; }
+  .ed-color.active { border-color: white; }
+  .ed-size-label { color: #aaa; font-size: 11px; margin-left: 4px; }
+  .ed-size { width: 60px; accent-color: #c9a227; }
+  .img-editor-canvas-wrap {
+    flex: 1; overflow: hidden; position: relative;
+    display: flex; align-items: center; justify-content: center;
+    touch-action: none;
+  }
+  #imgEditorCanvas {
+    cursor: crosshair; touch-action: none; max-width: 100%; max-height: 100%;
+    display: block;
+  }
+  .img-editor-status {
+    padding: 4px 10px; background: #1a1a2e; color: #888; font-size: 11px;
+    text-align: center;
+  }
+
+  .photo-edit {
+    position: absolute; bottom: 3px; right: 22px;
+    background: rgba(26,26,46,0.85); border: none;
+    border-radius: 4px; font-size: 11px; padding: 2px 4px;
+    cursor: pointer; color: white; line-height: 1;
+  }
 </style>
 </head>
 <body>
@@ -548,10 +595,6 @@
     <div class="field">
       <label>Inspector</label>
       <input type="text" id="f-inspector" value="Andy Phelan, CSP" oninput="autoSave()" />
-    </div>
-    <div class="field">
-      <label>General observations / notes</label>
-      <textarea id="f-notes" placeholder="Overall impressions, context, areas covered..." oninput="autoSave()"></textarea>
     </div>
   </div>
 
@@ -838,7 +881,7 @@ function renderFindings() {
             Take photo
           </button>
           <input type="file" accept="image/*" capture="environment" id="cam-${f.id}" onchange="handlePhoto(${f.id},this)" />
-          ${photos.length ? `<div class="photo-grid">${photos.map((p,pi)=>`<div class="photo-thumb"><img src="${p}" /><button class="photo-del" onclick="delPhoto(${f.id},${pi})">×</button></div>`).join('')}</div>` : ''}
+          ${photos.length ? `<div class="photo-grid">${photos.map((p,pi)=>`<div class="photo-thumb"><img src="${p}" onclick="openImgEditor(${f.id},${pi})" style="cursor:pointer" title="Tap to edit" /><button class="photo-edit" onclick="openImgEditor(${f.id},${pi})">&#x270F;</button><button class="photo-del" onclick="delPhoto(${f.id},${pi})">×</button></div>`).join('')}</div>` : ''}
         </div>
         <button class="delete-finding-btn" onclick="delFinding(${f.id})">Remove this finding</button>
       </div>
@@ -1144,6 +1187,33 @@ function generatePDF() {
   </div>
 
 </div>
+
+<!-- ══ IMAGE EDITOR MODAL ══ -->
+<div class="img-editor-overlay" id="imgEditorOverlay">
+  <div class="img-editor-toolbar">
+    <button class="ed-btn ed-tool active" id="edToolDraw" onclick="edSetTool('draw')">&#x270F;&#xFE0F; Draw</button>
+    <button class="ed-btn ed-tool" id="edToolCrop" onclick="edSetTool('crop')">&#x2702;&#xFE0F; Crop</button>
+    <button class="ed-btn ed-btn-clear" onclick="edClearDrawings()">&#x1F5D1;&#xFE0F; Clear</button>
+    <div class="ed-color-row" id="edColors">
+      <span style="color:#aaa;font-size:11px">Color:</span>
+      <div class="ed-color active" style="background:#ff3b30" data-c="#ff3b30" onclick="edSetColor(this)"></div>
+      <div class="ed-color" style="background:#ffcc00" data-c="#ffcc00" onclick="edSetColor(this)"></div>
+      <div class="ed-color" style="background:#34c759" data-c="#34c759" onclick="edSetColor(this)"></div>
+      <div class="ed-color" style="background:#007aff" data-c="#007aff" onclick="edSetColor(this)"></div>
+      <div class="ed-color" style="background:#ffffff" data-c="#ffffff" onclick="edSetColor(this)"></div>
+      <div class="ed-color" style="background:#000000;border:1px solid #555" data-c="#000000" onclick="edSetColor(this)"></div>
+    </div>
+    <span class="ed-size-label">Size:</span>
+    <input type="range" class="ed-size" id="edBrushSize" min="2" max="30" value="6" oninput="edUpdateBrush()">
+    <button class="ed-btn ed-btn-cancel" onclick="edClose()">&#x2715; Cancel</button>
+    <button class="ed-btn ed-btn-save" onclick="edSave()">&#x2705; Save Photo</button>
+  </div>
+  <div class="img-editor-canvas-wrap" id="edCanvasWrap">
+    <canvas id="imgEditorCanvas"></canvas>
+  </div>
+  <div class="img-editor-status" id="edStatus">Draw mode &#8212; tap and drag to annotate</div>
+</div>
+
 </body>
 </html>`;
 
@@ -1206,6 +1276,208 @@ if (!v('f-date')) setVal('f-date', new Date().toISOString().split('T')[0]);
 if (!v('f-inspector')) setVal('f-inspector','Andy Phelan, CSP');
 renderFindings();
 updateTabCount();
+
+
+// ══════════════════════════════════════════
+//  IMAGE EDITOR
+// ══════════════════════════════════════════
+let _edFindingId = null, _edPhotoIdx = null;
+let _edTool = 'draw';
+let _edColor = '#ff3b30';
+let _edBrushSize = 6;
+let _edDrawing = false;
+let _edLastX = 0, _edLastY = 0;
+let _edBaseImage = null;
+let _cropX = 0, _cropY = 0, _cropW = 0, _cropH = 0, _cropActive = false;
+let _cropStartX = 0, _cropStartY = 0;
+
+function openImgEditor(findingId, photoIdx) {
+  _edFindingId = findingId;
+  _edPhotoIdx = photoIdx;
+  const f = findings.find(x => x.id === findingId);
+  if (!f || !f.photos || !f.photos[photoIdx]) return;
+  const overlay = document.getElementById('imgEditorOverlay');
+  overlay.classList.add('open');
+  const canvas = document.getElementById('imgEditorCanvas');
+  const img = new Image();
+  img.onload = function() {
+    _edBaseImage = img;
+    const wrap = document.getElementById('edCanvasWrap');
+    const maxW = wrap.clientWidth - 16;
+    const maxH = wrap.clientHeight - 16;
+    const ratio = Math.min(maxW / img.width, maxH / img.height, 1);
+    canvas.width = Math.round(img.width * ratio);
+    canvas.height = Math.round(img.height * ratio);
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  };
+  img.src = f.photos[photoIdx];
+  edSetTool('draw');
+  document.getElementById('edStatus').textContent = 'Draw mode — tap and drag to annotate';
+  edAttachEvents();
+}
+
+function edAttachEvents() {
+  const canvas = document.getElementById('imgEditorCanvas');
+  const newCanvas = canvas.cloneNode(true);
+  canvas.parentNode.replaceChild(newCanvas, canvas);
+  const c = document.getElementById('imgEditorCanvas');
+  c.addEventListener('mousedown', edPointerDown);
+  c.addEventListener('mousemove', edPointerMove);
+  c.addEventListener('mouseup', edPointerUp);
+  c.addEventListener('mouseleave', edPointerUp);
+  c.addEventListener('touchstart', edTouchDown, {passive: false});
+  c.addEventListener('touchmove', edTouchMove, {passive: false});
+  c.addEventListener('touchend', edPointerUp);
+}
+
+function edCanvasPos(e, canvas) {
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: (e.clientX - rect.left) * (canvas.width / rect.width),
+    y: (e.clientY - rect.top) * (canvas.height / rect.height)
+  };
+}
+
+function edPointerDown(e) {
+  const pos = edCanvasPos(e, this);
+  _edDrawing = true;
+  _edLastX = pos.x; _edLastY = pos.y;
+  if (_edTool === 'crop') {
+    _cropStartX = pos.x; _cropStartY = pos.y;
+    _cropX = pos.x; _cropY = pos.y; _cropW = 0; _cropH = 0;
+    _cropActive = true;
+  }
+}
+
+function edPointerMove(e) {
+  if (!_edDrawing) return;
+  const canvas = document.getElementById('imgEditorCanvas');
+  const pos = edCanvasPos(e, canvas);
+  const ctx = canvas.getContext('2d');
+  if (_edTool === 'draw') {
+    ctx.beginPath();
+    ctx.moveTo(_edLastX, _edLastY);
+    ctx.lineTo(pos.x, pos.y);
+    ctx.strokeStyle = _edColor;
+    ctx.lineWidth = _edBrushSize;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+    _edLastX = pos.x; _edLastY = pos.y;
+  } else if (_edTool === 'crop' && _cropActive) {
+    _cropX = Math.min(pos.x, _cropStartX);
+    _cropY = Math.min(pos.y, _cropStartY);
+    _cropW = Math.abs(pos.x - _cropStartX);
+    _cropH = Math.abs(pos.y - _cropStartY);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(_edBaseImage, 0, 0, canvas.width, canvas.height);
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(_cropX, _cropY, _cropW, _cropH);
+    ctx.strokeStyle = '#c9a227';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 3]);
+    ctx.strokeRect(_cropX, _cropY, _cropW, _cropH);
+    ctx.setLineDash([]);
+    ctx.restore();
+    document.getElementById('edStatus').textContent =
+      'Crop: ' + Math.round(_cropW) + ' x ' + Math.round(_cropH) + ' — tap Save to apply';
+  }
+}
+
+function edPointerUp() { _edDrawing = false; }
+
+function edTouchDown(e) {
+  e.preventDefault();
+  const t = e.touches[0];
+  edPointerDown.call(document.getElementById('imgEditorCanvas'), {clientX: t.clientX, clientY: t.clientY});
+}
+
+function edTouchMove(e) {
+  e.preventDefault();
+  if (!_edDrawing) return;
+  const t = e.touches[0];
+  edPointerMove.call(document.getElementById('imgEditorCanvas'), {clientX: t.clientX, clientY: t.clientY});
+}
+
+function edSetTool(tool) {
+  _edTool = tool;
+  document.querySelectorAll('.ed-tool').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('edTool' + tool.charAt(0).toUpperCase() + tool.slice(1));
+  if (btn) btn.classList.add('active');
+  const colorRow = document.getElementById('edColors');
+  const sizeLabel = document.querySelector('.ed-size-label');
+  const sizeInput = document.getElementById('edBrushSize');
+  if (tool === 'draw') {
+    if (colorRow) colorRow.style.display = 'flex';
+    if (sizeLabel) sizeLabel.style.display = '';
+    if (sizeInput) sizeInput.style.display = '';
+    document.getElementById('edStatus').textContent = 'Draw mode — tap and drag to annotate';
+    if (_edBaseImage) {
+      const canvas = document.getElementById('imgEditorCanvas');
+      canvas.getContext('2d').drawImage(_edBaseImage, 0, 0, canvas.width, canvas.height);
+    }
+    _cropActive = false;
+  } else if (tool === 'crop') {
+    if (colorRow) colorRow.style.display = 'none';
+    if (sizeLabel) sizeLabel.style.display = 'none';
+    if (sizeInput) sizeInput.style.display = 'none';
+    document.getElementById('edStatus').textContent = 'Crop mode — drag to select area, then Save';
+  }
+}
+
+function edSetColor(el) {
+  _edColor = el.dataset.c;
+  document.querySelectorAll('.ed-color').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function edUpdateBrush() {
+  _edBrushSize = parseInt(document.getElementById('edBrushSize').value);
+}
+
+function edClearDrawings() {
+  if (!_edBaseImage) return;
+  const canvas = document.getElementById('imgEditorCanvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(_edBaseImage, 0, 0, canvas.width, canvas.height);
+  _cropActive = false;
+  document.getElementById('edStatus').textContent = 'Cleared';
+}
+
+function edSave() {
+  const canvas = document.getElementById('imgEditorCanvas');
+  let finalDataUrl;
+  if (_edTool === 'crop' && _cropActive && _cropW > 10 && _cropH > 10) {
+    const cropCanvas = document.createElement('canvas');
+    cropCanvas.width = Math.round(_cropW);
+    cropCanvas.height = Math.round(_cropH);
+    cropCanvas.getContext('2d').drawImage(canvas, _cropX, _cropY, _cropW, _cropH, 0, 0, _cropW, _cropH);
+    finalDataUrl = cropCanvas.toDataURL('image/jpeg', 0.92);
+  } else {
+    finalDataUrl = canvas.toDataURL('image/jpeg', 0.92);
+  }
+  const f = findings.find(x => x.id === _edFindingId);
+  if (f && f.photos) {
+    f.photos[_edPhotoIdx] = finalDataUrl;
+    autoSave();
+    renderFindings();
+  }
+  edClose();
+}
+
+function edClose() {
+  const overlay = document.getElementById('imgEditorOverlay');
+  overlay.classList.remove('open');
+  _edFindingId = null; _edPhotoIdx = null; _edBaseImage = null;
+  _cropActive = false; _edDrawing = false;
+  const canvas = document.getElementById('imgEditorCanvas');
+  if (canvas) canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+}
+
 </script>
 </body>
 </html>
