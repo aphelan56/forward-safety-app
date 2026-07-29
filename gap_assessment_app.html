@@ -81,6 +81,7 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif
 .att-view-bar{display:flex;align-items:center;gap:12px;color:#fff;font-size:12px;margin-bottom:10px;max-width:100%}
 .att-view-bar span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .att-view-bar button{background:none;border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:6px;padding:4px 9px;cursor:pointer}
+.att-x.arm{background:var(--gold);color:var(--navy);width:auto;height:20px;padding:0 7px;border-radius:10px;font-weight:700}
 .r-att{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .r-att img{width:92px;height:92px;object-fit:cover;border-radius:6px;border:1px solid #ddd}
 .sec-head{margin:18px 0 10px;padding:9px 12px;background:#eef1f6;border-left:4px solid var(--navy);border-radius:6px}
@@ -428,7 +429,7 @@ function updReport(){
       finds.forEach(q=>{const qd=S[t.key][q.qn]||{};h+='<div class="fi"><h4>Q'+q.qn+': '+(qd.title||q.req.substring(0,80)+'...')+'</h4><div class="fi-m">'+(qd.party?'Responsible: '+qd.party:'')+(qd.due?' | Due: '+qd.due:'')+'</div>'+(qd.desc?'<div class="fi-d"><strong>Finding:</strong> '+qd.desc+'</div>':'')+(qd.rec?'<div class="fi-d"><strong>Recommendation:</strong> '+qd.rec+'</div>':'')+attReport(t.key,q.qn)+'</div>';});
     }});
   if(hf)h+='</div>';
-  document.getElementById('rContent').innerHTML=h;
+  h+=attSection();document.getElementById('rContent').innerHTML=h;
 }
 function copyReport(){
   collectVals();const si=S.si||{};const{tC,tG,tN,bt}=getStats();const a=tC+tG+tN;const p=a>0?Math.round(tC/a*100):0;
@@ -441,7 +442,7 @@ function copyReport(){
     if(finds.length){txt+='\n'+t.label.toUpperCase()+'\n'+'-'.repeat(40)+'\n';
       finds.forEach(q=>{const qd=S[t.key][q.qn]||{};txt+='Q'+q.qn+': '+(qd.title||'Finding')+'\n  Req: '+q.req+'\n';if(qd.desc)txt+='  Finding: '+qd.desc+'\n';if(qd.rec)txt+='  Rec: '+qd.rec+'\n';if(qd.party)txt+='  Responsible: '+qd.party+'\n';if(qd.due)txt+='  Due: '+qd.due+'\n';const _fs=ATT[attKey(t.key,q.qn)]||[];if(_fs.length)txt+='  Attachments: '+_fs.map(f=>f.name).join(', ')+'\n';txt+='\n';});
     }});
-  navigator.clipboard.writeText(txt).then(()=>alert('Copied!'));
+  let _al='';TOPICS.forEach(t=>{(QUESTIONS[t.key]||[]).forEach(q=>{const fs=ATT[attKey(t.key,q.qn)]||[];if(fs.length)_al+=t.label+' Q'+q.qn+': '+fs.map(f=>f.name).join(', ')+'\n';});});if(_al)txt+='\nATTACHMENTS\n'+'-'.repeat(40)+'\n'+_al;navigator.clipboard.writeText(txt).then(()=>alert('Copied!'));
 }
 function buildUI(){
   const sel=document.getElementById('tSel');const pan=document.getElementById('tPanels');
@@ -467,11 +468,12 @@ function readFile(file){return new Promise(res=>{const fr=new FileReader();fr.on
 function attKey(tk,qn){return tk+'|'+qn;}
 function syncAttMeta(tk,qn){const k=attKey(tk,qn);if(!S[tk])S[tk]={};if(!S[tk][qn])S[tk][qn]={};S[tk][qn].files=(ATT[k]||[]).map(r=>({id:r.id,name:r.name,type:r.type}));}
 async function addAtt(tk,qn,input){const files=Array.prototype.slice.call(input.files||[]);input.value='';if(!files.length)return;const id=tk+'_'+qn,k=attKey(tk,qn);const box=document.getElementById(id+'_attbox');if(box)box.classList.add('busy');for(const f of files){if(f.size>15*1024*1024){alert('"'+f.name+'" is larger than 15 MB and was skipped.');continue;}let data=/^image\//.test(f.type)?await shrinkImg(f):await readFile(f);if(!data){alert('Could not read "'+f.name+'".');continue;}const rec={q:k,name:f.name,type:f.type||'file',data:data,ts:Date.now()};try{rec.id=await aPut(rec);(ATT[k]=ATT[k]||[]).push(rec);}catch(e){alert('Could not save "'+f.name+'" - device storage may be full.');}}if(box)box.classList.remove('busy');syncAttMeta(tk,qn);renderAtt(tk,qn);saveS();}
-async function delAtt(id,tk,qn){if(!confirm('Remove this attachment?'))return;const k=attKey(tk,qn);try{await aDel(id);}catch(e){}ATT[k]=(ATT[k]||[]).filter(r=>r.id!==id);syncAttMeta(tk,qn);renderAtt(tk,qn);saveS();}
-function renderAtt(tk,qn){const id=tk+'_'+qn,k=attKey(tk,qn);const box=document.getElementById(id+'_att');if(!box)return;const list=ATT[k]||[];box.innerHTML=list.map(r=>{const x='<button class="att-x" title="Remove" onclick="delAtt('+r.id+',\''+tk+'\',\''+qn+'\')">&#10005;</button>';return /^image\//.test(r.type)?'<div class="att-item"><img src="'+r.data+'" alt="'+esc(r.name)+'" onclick="viewAtt('+r.id+',\''+tk+'\',\''+qn+'\')">'+x+'</div>':'<div class="att-item file"><a href="'+r.data+'" download="'+esc(r.name)+'"><span>&#128196;</span><span class="att-nm">'+esc(r.name)+'</span></a>'+x+'</div>';}).join('');const n=document.getElementById(id+'_attn');if(n)n.textContent=list.length?'('+list.length+')':'';}
+async function delAtt(id,tk,qn,btn){if(btn&&btn.getAttribute('data-arm')!=='1'){btn.setAttribute('data-arm','1');btn.classList.add('arm');btn.innerHTML='&#10003;';btn.title='Tap again to remove';setTimeout(function(){if(btn&&btn.getAttribute('data-arm')==='1'){btn.setAttribute('data-arm','');btn.classList.remove('arm');btn.innerHTML='&#10005;';btn.title='Remove';}},4000);return;}const k=attKey(tk,qn);try{await aDel(id);}catch(e){}ATT[k]=(ATT[k]||[]).filter(r=>r.id!==id);syncAttMeta(tk,qn);renderAtt(tk,qn);saveS();}
+function renderAtt(tk,qn){const id=tk+'_'+qn,k=attKey(tk,qn);const box=document.getElementById(id+'_att');if(!box)return;const list=ATT[k]||[];box.innerHTML=list.map(r=>{const x='<button class="att-x" title="Remove" onclick="delAtt('+r.id+',\''+tk+'\',\''+qn+'\',this)">&#10005;</button>';return /^image\//.test(r.type)?'<div class="att-item"><img src="'+r.data+'" alt="'+esc(r.name)+'" onclick="viewAtt('+r.id+',\''+tk+'\',\''+qn+'\')">'+x+'</div>':'<div class="att-item file"><a href="'+r.data+'" download="'+esc(r.name)+'"><span>&#128196;</span><span class="att-nm">'+esc(r.name)+'</span></a>'+x+'</div>';}).join('');const n=document.getElementById(id+'_attn');if(n)n.textContent=list.length?'('+list.length+')':'';}
 function viewAtt(id,tk,qn){const r=(ATT[attKey(tk,qn)]||[]).find(x=>x.id===id);if(!r)return;const o=document.createElement('div');o.className='att-view';o.innerHTML='<div class="att-view-bar"><span>'+esc(r.name)+'</span><button onclick="this.parentNode.parentNode.remove()">&#10005; Close</button></div><img src="'+r.data+'">';o.onclick=function(e){if(e.target===o)o.remove();};document.body.appendChild(o);}
 async function loadAtt(){const all=await aAll();ATT={};all.forEach(r=>{(ATT[r.q]=ATT[r.q]||[]).push(r);});Object.keys(ATT).forEach(k=>{const p=k.split('|');if(p.length===2){syncAttMeta(p[0],p[1]);renderAtt(p[0],p[1]);}});}
 function attReport(tk,qn){const fs=ATT[attKey(tk,qn)]||[];if(!fs.length)return '';const ims=fs.filter(f=>/^image\//.test(f.type));return '<div class="fi-d"><strong>Attachments ('+fs.length+'):</strong> '+esc(fs.map(f=>f.name).join(', '))+'</div>'+(ims.length?'<div class="r-att">'+ims.map(f=>'<img src="'+f.data+'">').join('')+'</div>':'');}
+function attSection(){const rows=[];TOPICS.forEach(t=>{(QUESTIONS[t.key]||[]).forEach(q=>{const fs=ATT[attKey(t.key,q.qn)]||[];if(fs.length)rows.push({t:t,q:q,fs:fs});});});if(!rows.length)return '';let h='<div class="rs"><h2>Photo Evidence &amp; Attachments</h2>';let last='';rows.forEach(r=>{if(r.t.key!==last){h+='<h3 style="margin:16px 0 8px;font-size:14px;color:var(--navy)">'+r.t.icon+' '+r.t.label+'</h3>';last=r.t.key;}const ans=((S[r.t.key]||{})[r.q.qn]||{}).answer;const lbl=ans==='yes'?'Compliant':ans==='no'?'Gap':ans==='na'?'N/A':'Not answered';h+='<div class="fi"><h4>Q'+r.q.qn+': '+esc(r.q.req.substring(0,90))+(r.q.req.length>90?'...':'')+'</h4><div class="fi-m">'+lbl+' &nbsp;|&nbsp; '+r.fs.length+' attachment'+(r.fs.length>1?'s':'')+': '+esc(r.fs.map(f=>f.name).join(', '))+'</div>';const ims=r.fs.filter(f=>/^image\//.test(f.type));if(ims.length)h+='<div class="r-att">'+ims.map(f=>'<img src="'+f.data+'">').join('')+'</div>';h+='</div>';});return h+'</div>';}
 document.addEventListener('DOMContentLoaded',function(){
   loadS();buildUI();restoreVals();updDash();loadAtt();
   const d=document.getElementById('si-date');if(d&&!d.value)d.value=new Date().toISOString().split('T')[0];
