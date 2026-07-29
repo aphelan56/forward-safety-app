@@ -62,6 +62,27 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif
 .q-text{font-size:13px;line-height:1.5;flex:1}
 .q-docs{font-size:11px;color:#888;margin-top:4px;font-style:italic}
 .q-ref{font-size:11px;color:var(--blue);margin-top:4px;font-weight:600}
+.att-box{margin-top:10px;border-top:1px dashed #e4e4e4;padding-top:8px}
+.att-box.busy{opacity:.55;pointer-events:none}
+.att-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.att-lbl{font-size:11px;font-weight:700;color:#777;text-transform:uppercase;letter-spacing:.4px}
+.att-n{font-weight:700;color:var(--blue);text-transform:none;letter-spacing:0}
+.att-add{font-size:11px;font-weight:700;color:var(--navy);background:#f0f2f5;border:1px solid #dcdfe4;border-radius:6px;padding:6px 10px;cursor:pointer;white-space:nowrap}
+.att-add input{display:none}
+.att-list{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}
+.att-list:empty{margin-top:0}
+.att-item{position:relative}
+.att-item img{width:74px;height:74px;object-fit:cover;border-radius:8px;border:1px solid #ddd;cursor:pointer;display:block}
+.att-item.file a{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--navy);text-decoration:none;background:#f7f8fa;border:1px solid #e0e0e0;border-radius:8px;padding:9px 24px 9px 9px;max-width:190px}
+.att-nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:130px}
+.att-x{position:absolute;top:-7px;right:-7px;width:20px;height:20px;border-radius:50%;border:none;background:var(--red);color:#fff;font-size:10px;line-height:1;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.35);padding:0}
+.att-view{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.88);z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px}
+.att-view img{max-width:100%;max-height:84vh;border-radius:8px}
+.att-view-bar{display:flex;align-items:center;gap:12px;color:#fff;font-size:12px;margin-bottom:10px;max-width:100%}
+.att-view-bar span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.att-view-bar button{background:none;border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:6px;padding:4px 9px;cursor:pointer}
+.r-att{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.r-att img{width:92px;height:92px;object-fit:cover;border-radius:6px;border:1px solid #ddd}
 .sec-head{margin:18px 0 10px;padding:9px 12px;background:#eef1f6;border-left:4px solid var(--navy);border-radius:6px}
 .sec-head h4{margin:0;font-size:13px;font-weight:700;color:var(--navy)}
 .sec-head p{margin:5px 0 0;font-size:11px;font-style:italic;color:#666;line-height:1.45}
@@ -404,7 +425,7 @@ function updReport(){
     const finds=(QUESTIONS[t.key]||[]).filter(q=>(S[t.key]||{})[q.qn]&&S[t.key][q.qn].answer==='no');
     if(finds.length){if(!hf){h+='<div class="rs"><h2>Gap Findings</h2>';hf=true;}
       h+='<h3 style="margin:16px 0 8px;font-size:14px;color:var(--navy)">'+t.icon+' '+t.label+'</h3>';
-      finds.forEach(q=>{const qd=S[t.key][q.qn]||{};h+='<div class="fi"><h4>Q'+q.qn+': '+(qd.title||q.req.substring(0,80)+'...')+'</h4><div class="fi-m">'+(qd.party?'Responsible: '+qd.party:'')+(qd.due?' | Due: '+qd.due:'')+'</div>'+(qd.desc?'<div class="fi-d"><strong>Finding:</strong> '+qd.desc+'</div>':'')+(qd.rec?'<div class="fi-d"><strong>Recommendation:</strong> '+qd.rec+'</div>':'')+'</div>';});
+      finds.forEach(q=>{const qd=S[t.key][q.qn]||{};h+='<div class="fi"><h4>Q'+q.qn+': '+(qd.title||q.req.substring(0,80)+'...')+'</h4><div class="fi-m">'+(qd.party?'Responsible: '+qd.party:'')+(qd.due?' | Due: '+qd.due:'')+'</div>'+(qd.desc?'<div class="fi-d"><strong>Finding:</strong> '+qd.desc+'</div>':'')+(qd.rec?'<div class="fi-d"><strong>Recommendation:</strong> '+qd.rec+'</div>':'')+attReport(t.key,q.qn)+'</div>';});
     }});
   if(hf)h+='</div>';
   document.getElementById('rContent').innerHTML=h;
@@ -418,7 +439,7 @@ function copyReport(){
   txt+='\nFINDINGS\n'+'='.repeat(60)+'\n';
   TOPICS.forEach(t=>{const finds=(QUESTIONS[t.key]||[]).filter(q=>(S[t.key]||{})[q.qn]&&S[t.key][q.qn].answer==='no');
     if(finds.length){txt+='\n'+t.label.toUpperCase()+'\n'+'-'.repeat(40)+'\n';
-      finds.forEach(q=>{const qd=S[t.key][q.qn]||{};txt+='Q'+q.qn+': '+(qd.title||'Finding')+'\n  Req: '+q.req+'\n';if(qd.desc)txt+='  Finding: '+qd.desc+'\n';if(qd.rec)txt+='  Rec: '+qd.rec+'\n';if(qd.party)txt+='  Responsible: '+qd.party+'\n';if(qd.due)txt+='  Due: '+qd.due+'\n\n';});
+      finds.forEach(q=>{const qd=S[t.key][q.qn]||{};txt+='Q'+q.qn+': '+(qd.title||'Finding')+'\n  Req: '+q.req+'\n';if(qd.desc)txt+='  Finding: '+qd.desc+'\n';if(qd.rec)txt+='  Rec: '+qd.rec+'\n';if(qd.party)txt+='  Responsible: '+qd.party+'\n';if(qd.due)txt+='  Due: '+qd.due+'\n';const _fs=ATT[attKey(t.key,q.qn)]||[];if(_fs.length)txt+='  Attachments: '+_fs.map(f=>f.name).join(', ')+'\n';txt+='\n';});
     }});
   navigator.clipboard.writeText(txt).then(()=>alert('Copied!'));
 }
@@ -429,13 +450,30 @@ function buildUI(){
     const qs=QUESTIONS[t.key]||[];
     let lastSec='';
     const qh=qs.map(q=>{const id=t.key+'_'+q.qn;let head='';if(q.sec&&q.sec!==lastSec){lastSec=q.sec;head='<div class="sec-head"><h4>'+q.sec+'</h4>'+(q.secNote?'<p>'+q.secNote+'</p>':'')+'</div>';}
-      return head+'<div class="q-card" id="card_'+id+'"><div class="q-header"><span class="q-num">Q'+q.qn+'</span><div><div class="q-text">'+q.req+'</div>'+(q.ref?'<div class="q-ref">'+q.ref+'</div>':'')+(q.docs?'<div class="q-docs">\uD83D\uDCC4 '+q.docs+'</div>':'')+'</div></div><div class="q-radios"><label class="q-radio-label yes-opt"><input type="radio" name="'+id+'" value="yes" onchange="handleAns(\''+t.key+'\',\''+q.qn+'\',\'yes\',this)"><span>&#x2713; Yes</span></label><label class="q-radio-label no-opt"><input type="radio" name="'+id+'" value="no" onchange="handleAns(\''+t.key+'\',\''+q.qn+'\',\'no\',this)"><span>&#x2717; No</span></label><label class="q-radio-label na-opt"><input type="radio" name="'+id+'" value="na" onchange="handleAns(\''+t.key+'\',\''+q.qn+'\',\'na\',this)"><span>&#8212; N/A</span></label></div><div class="finding-form" id="'+id+'_ff"><div class="form-row"><div class="form-group" style="flex:100%"><label>Finding Title</label><input type="text" id="'+id+'_title" placeholder="Brief title for this gap" oninput="autoSave()"></div></div><div class="form-row"><div class="form-group" style="flex:100%"><label>Finding Description / Comments</label><textarea id="'+id+'_desc" placeholder="Describe the gap or non-compliance observed..." oninput="autoSave()"></textarea></div></div><div class="form-row"><div class="form-group" style="flex:100%"><label>Recommendation</label><textarea id="'+id+'_rec" placeholder="Recommended corrective action..." oninput="autoSave()"></textarea></div></div><div class="form-row"><div class="form-group"><label>Responsible Party</label><input type="text" id="'+id+'_party" placeholder="Who is responsible?" oninput="autoSave()"></div><div class="form-group"><label>Required Close-out Date</label><input type="date" id="'+id+'_due" oninput="autoSave()"></div></div></div></div>';
+      return head+'<div class="q-card" id="card_'+id+'"><div class="q-header"><span class="q-num">Q'+q.qn+'</span><div><div class="q-text">'+q.req+'</div>'+(q.ref?'<div class="q-ref">'+q.ref+'</div>':'')+(q.docs?'<div class="q-docs">\uD83D\uDCC4 '+q.docs+'</div>':'')+'</div></div><div class="q-radios"><label class="q-radio-label yes-opt"><input type="radio" name="'+id+'" value="yes" onchange="handleAns(\''+t.key+'\',\''+q.qn+'\',\'yes\',this)"><span>&#x2713; Yes</span></label><label class="q-radio-label no-opt"><input type="radio" name="'+id+'" value="no" onchange="handleAns(\''+t.key+'\',\''+q.qn+'\',\'no\',this)"><span>&#x2717; No</span></label><label class="q-radio-label na-opt"><input type="radio" name="'+id+'" value="na" onchange="handleAns(\''+t.key+'\',\''+q.qn+'\',\'na\',this)"><span>&#8212; N/A</span></label></div><div class="att-box" id="'+id+'_attbox"><div class="att-head"><span class="att-lbl">&#128206; Photos / Files <span class="att-n" id="'+id+'_attn"></span></span><label class="att-add">+ Add<input type="file" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt" multiple onchange="addAtt(\''+t.key+'\',\''+q.qn+'\',this)"></label></div><div class="att-list" id="'+id+'_att"></div></div><div class="finding-form" id="'+id+'_ff"><div class="form-row"><div class="form-group" style="flex:100%"><label>Finding Title</label><input type="text" id="'+id+'_title" placeholder="Brief title for this gap" oninput="autoSave()"></div></div><div class="form-row"><div class="form-group" style="flex:100%"><label>Finding Description / Comments</label><textarea id="'+id+'_desc" placeholder="Describe the gap or non-compliance observed..." oninput="autoSave()"></textarea></div></div><div class="form-row"><div class="form-group" style="flex:100%"><label>Recommendation</label><textarea id="'+id+'_rec" placeholder="Recommended corrective action..." oninput="autoSave()"></textarea></div></div><div class="form-row"><div class="form-group"><label>Responsible Party</label><input type="text" id="'+id+'_party" placeholder="Who is responsible?" oninput="autoSave()"></div><div class="form-group"><label>Required Close-out Date</label><input type="date" id="'+id+'_due" oninput="autoSave()"></div></div></div></div>';
     }).join('');
     return '<div class="topic-panel'+(i===0?' active':'')+'" id="panel-'+t.key+'"><div class="section-badge"><span>'+t.icon+' '+t.label+' &#8212; OSHA Compliance</span><span>'+qs.length+' questions</span></div>'+(INTROS[t.key]||'')+qh+'</div>';
   }).join('');
 }
+/* ---- Attachments: photos & files per question (stored in IndexedDB) ---- */
+const ADB='fsGapFiles',ASTORE='att';let ATT={};
+function aOpen(){return new Promise((res,rej)=>{const r=indexedDB.open(ADB,1);r.onupgradeneeded=e=>{const db=e.target.result;if(!db.objectStoreNames.contains(ASTORE)){const os=db.createObjectStore(ASTORE,{keyPath:'id',autoIncrement:true});os.createIndex('q','q',{unique:false});}};r.onsuccess=e=>res(e.target.result);r.onerror=()=>rej(r.error);});}
+async function aAll(){try{const db=await aOpen();return await new Promise((res,rej)=>{const rq=db.transaction(ASTORE,'readonly').objectStore(ASTORE).getAll();rq.onsuccess=()=>res(rq.result||[]);rq.onerror=()=>rej(rq.error);});}catch(e){return[];}}
+async function aPut(rec){const db=await aOpen();return await new Promise((res,rej)=>{const rq=db.transaction(ASTORE,'readwrite').objectStore(ASTORE).add(rec);rq.onsuccess=()=>res(rq.result);rq.onerror=()=>rej(rq.error);});}
+async function aDel(id){const db=await aOpen();return await new Promise((res,rej)=>{const rq=db.transaction(ASTORE,'readwrite').objectStore(ASTORE).delete(id);rq.onsuccess=()=>res();rq.onerror=()=>rej(rq.error);});}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function shrinkImg(file){return new Promise(res=>{const fr=new FileReader();fr.onload=()=>{const img=new Image();img.onload=()=>{const M=1400;let w=img.width,h=img.height;if(Math.max(w,h)>M){const s=M/Math.max(w,h);w=Math.round(w*s);h=Math.round(h*s);}try{const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);res(c.toDataURL('image/jpeg',.72));}catch(e){res(fr.result);}};img.onerror=()=>res(fr.result);img.src=fr.result;};fr.onerror=()=>res(null);fr.readAsDataURL(file);});}
+function readFile(file){return new Promise(res=>{const fr=new FileReader();fr.onload=()=>res(fr.result);fr.onerror=()=>res(null);fr.readAsDataURL(file);});}
+function attKey(tk,qn){return tk+'|'+qn;}
+function syncAttMeta(tk,qn){const k=attKey(tk,qn);if(!S[tk])S[tk]={};if(!S[tk][qn])S[tk][qn]={};S[tk][qn].files=(ATT[k]||[]).map(r=>({id:r.id,name:r.name,type:r.type}));}
+async function addAtt(tk,qn,input){const files=Array.prototype.slice.call(input.files||[]);input.value='';if(!files.length)return;const id=tk+'_'+qn,k=attKey(tk,qn);const box=document.getElementById(id+'_attbox');if(box)box.classList.add('busy');for(const f of files){if(f.size>15*1024*1024){alert('"'+f.name+'" is larger than 15 MB and was skipped.');continue;}let data=/^image\//.test(f.type)?await shrinkImg(f):await readFile(f);if(!data){alert('Could not read "'+f.name+'".');continue;}const rec={q:k,name:f.name,type:f.type||'file',data:data,ts:Date.now()};try{rec.id=await aPut(rec);(ATT[k]=ATT[k]||[]).push(rec);}catch(e){alert('Could not save "'+f.name+'" - device storage may be full.');}}if(box)box.classList.remove('busy');syncAttMeta(tk,qn);renderAtt(tk,qn);saveS();}
+async function delAtt(id,tk,qn){if(!confirm('Remove this attachment?'))return;const k=attKey(tk,qn);try{await aDel(id);}catch(e){}ATT[k]=(ATT[k]||[]).filter(r=>r.id!==id);syncAttMeta(tk,qn);renderAtt(tk,qn);saveS();}
+function renderAtt(tk,qn){const id=tk+'_'+qn,k=attKey(tk,qn);const box=document.getElementById(id+'_att');if(!box)return;const list=ATT[k]||[];box.innerHTML=list.map(r=>{const x='<button class="att-x" title="Remove" onclick="delAtt('+r.id+',\''+tk+'\',\''+qn+'\')">&#10005;</button>';return /^image\//.test(r.type)?'<div class="att-item"><img src="'+r.data+'" alt="'+esc(r.name)+'" onclick="viewAtt('+r.id+',\''+tk+'\',\''+qn+'\')">'+x+'</div>':'<div class="att-item file"><a href="'+r.data+'" download="'+esc(r.name)+'"><span>&#128196;</span><span class="att-nm">'+esc(r.name)+'</span></a>'+x+'</div>';}).join('');const n=document.getElementById(id+'_attn');if(n)n.textContent=list.length?'('+list.length+')':'';}
+function viewAtt(id,tk,qn){const r=(ATT[attKey(tk,qn)]||[]).find(x=>x.id===id);if(!r)return;const o=document.createElement('div');o.className='att-view';o.innerHTML='<div class="att-view-bar"><span>'+esc(r.name)+'</span><button onclick="this.parentNode.parentNode.remove()">&#10005; Close</button></div><img src="'+r.data+'">';o.onclick=function(e){if(e.target===o)o.remove();};document.body.appendChild(o);}
+async function loadAtt(){const all=await aAll();ATT={};all.forEach(r=>{(ATT[r.q]=ATT[r.q]||[]).push(r);});Object.keys(ATT).forEach(k=>{const p=k.split('|');if(p.length===2){syncAttMeta(p[0],p[1]);renderAtt(p[0],p[1]);}});}
+function attReport(tk,qn){const fs=ATT[attKey(tk,qn)]||[];if(!fs.length)return '';const ims=fs.filter(f=>/^image\//.test(f.type));return '<div class="fi-d"><strong>Attachments ('+fs.length+'):</strong> '+esc(fs.map(f=>f.name).join(', '))+'</div>'+(ims.length?'<div class="r-att">'+ims.map(f=>'<img src="'+f.data+'">').join('')+'</div>':'');}
 document.addEventListener('DOMContentLoaded',function(){
-  loadS();buildUI();restoreVals();updDash();
+  loadS();buildUI();restoreVals();updDash();loadAtt();
   const d=document.getElementById('si-date');if(d&&!d.value)d.value=new Date().toISOString().split('T')[0];
 });
 
