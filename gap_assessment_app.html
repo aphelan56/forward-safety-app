@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Forward Safety — Gap Assessment App</title>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -126,6 +126,24 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif
 .rs{background:white;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:var(--shadow)}
 .rs h2{margin:0 0 12px;font-size:16px;color:var(--navy);border-bottom:2px solid var(--gold);padding-bottom:8px}
 @media print{.app-header,.nav-tabs,.topic-selector,.no-print,.btn{display:none!important}.section{display:block!important;padding:0!important}}
+
+.att-btns{display:flex;gap:6px;align-items:center;flex-shrink:0}
+.att-cam{font-size:11px;font-weight:700;color:#fff;background:var(--navy);border:1px solid var(--navy);border-radius:6px;padding:6px 10px;cursor:pointer;white-space:nowrap}
+.att-cam input{display:none}
+.att-cam:active,.att-add:active{opacity:.7}
+.toast-wrap{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:20000;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
+.toast{background:rgba(26,26,46,.94);color:#fff;font-size:12.5px;font-weight:600;padding:10px 16px;border-radius:20px;box-shadow:0 4px 14px rgba(0,0,0,.3);max-width:80vw;text-align:center}
+@media (max-width:1024px){
+.q-radio-label{padding:10px 16px;font-size:14px;min-height:44px}
+.att-head{flex-wrap:wrap;row-gap:6px}
+.att-add,.att-cam{font-size:12.5px;padding:9px 13px;min-height:40px;display:inline-flex;align-items:center;justify-content:center}
+.att-item img{width:88px;height:88px}
+.att-x{width:26px;height:26px;font-size:13px;top:-9px;right:-9px}
+.att-x.arm{width:auto;height:26px;padding:0 10px;border-radius:13px;font-size:13px}
+.topic-btn{padding:11px 14px;font-size:13px}
+.nav-tab{padding:13px 15px;font-size:12.5px}
+.att-view-bar button{padding:8px 14px;font-size:13px}
+}
 </style>
 </head>
 <body>
@@ -406,7 +424,7 @@ function copyActions(){
     if(finds.length){txt+=t.label.toUpperCase()+'\n'+'-'.repeat(40)+'\n';
       finds.forEach(q=>{const qd=S[t.key][q.qn]||{};txt+='Q'+q.qn+': '+(qd.title||'Finding')+'\n';if(qd.rec)txt+='  Rec: '+qd.rec+'\n';if(qd.party)txt+='  Responsible: '+qd.party+'\n';if(qd.due)txt+='  Due: '+qd.due+'\n\n';});
     }});
-  navigator.clipboard.writeText(txt).then(()=>alert('Copied!'));
+  navigator.clipboard.writeText(txt).then(function(){toast('Copied to clipboard');},function(){toast('Copy failed - try selecting the text instead');});
 }
 function updReport(){
   collectVals();const si=S.si||{};const{tC,tG,tN,bt}=getStats();const a=tC+tG+tN;const p=a>0?Math.round(tC/a*100):0;
@@ -442,7 +460,7 @@ function copyReport(){
     if(finds.length){txt+='\n'+t.label.toUpperCase()+'\n'+'-'.repeat(40)+'\n';
       finds.forEach(q=>{const qd=S[t.key][q.qn]||{};txt+='Q'+q.qn+': '+(qd.title||'Finding')+'\n  Req: '+q.req+'\n';if(qd.desc)txt+='  Finding: '+qd.desc+'\n';if(qd.rec)txt+='  Rec: '+qd.rec+'\n';if(qd.party)txt+='  Responsible: '+qd.party+'\n';if(qd.due)txt+='  Due: '+qd.due+'\n';const _fs=ATT[attKey(t.key,q.qn)]||[];if(_fs.length)txt+='  Attachments: '+_fs.map(f=>f.name).join(', ')+'\n';txt+='\n';});
     }});
-  let _al='';TOPICS.forEach(t=>{(QUESTIONS[t.key]||[]).forEach(q=>{const fs=ATT[attKey(t.key,q.qn)]||[];if(fs.length)_al+=t.label+' Q'+q.qn+': '+fs.map(f=>f.name).join(', ')+'\n';});});if(_al)txt+='\nATTACHMENTS\n'+'-'.repeat(40)+'\n'+_al;navigator.clipboard.writeText(txt).then(()=>alert('Copied!'));
+  let _al='';TOPICS.forEach(t=>{(QUESTIONS[t.key]||[]).forEach(q=>{const fs=ATT[attKey(t.key,q.qn)]||[];if(fs.length)_al+=t.label+' Q'+q.qn+': '+fs.map(f=>f.name).join(', ')+'\n';});});if(_al)txt+='\nATTACHMENTS\n'+'-'.repeat(40)+'\n'+_al;navigator.clipboard.writeText(txt).then(function(){toast('Copied to clipboard');},function(){toast('Copy failed - try selecting the text instead');});
 }
 function buildUI(){
   const sel=document.getElementById('tSel');const pan=document.getElementById('tPanels');
@@ -451,7 +469,7 @@ function buildUI(){
     const qs=QUESTIONS[t.key]||[];
     let lastSec='';
     const qh=qs.map(q=>{const id=t.key+'_'+q.qn;let head='';if(q.sec&&q.sec!==lastSec){lastSec=q.sec;head='<div class="sec-head"><h4>'+q.sec+'</h4>'+(q.secNote?'<p>'+q.secNote+'</p>':'')+'</div>';}
-      return head+'<div class="q-card" id="card_'+id+'"><div class="q-header"><span class="q-num">Q'+q.qn+'</span><div><div class="q-text">'+q.req+'</div>'+(q.ref?'<div class="q-ref">'+q.ref+'</div>':'')+(q.docs?'<div class="q-docs">\uD83D\uDCC4 '+q.docs+'</div>':'')+'</div></div><div class="q-radios"><label class="q-radio-label yes-opt"><input type="radio" name="'+id+'" value="yes" onchange="handleAns(\''+t.key+'\',\''+q.qn+'\',\'yes\',this)"><span>&#x2713; Yes</span></label><label class="q-radio-label no-opt"><input type="radio" name="'+id+'" value="no" onchange="handleAns(\''+t.key+'\',\''+q.qn+'\',\'no\',this)"><span>&#x2717; No</span></label><label class="q-radio-label na-opt"><input type="radio" name="'+id+'" value="na" onchange="handleAns(\''+t.key+'\',\''+q.qn+'\',\'na\',this)"><span>&#8212; N/A</span></label></div><div class="att-box" id="'+id+'_attbox"><div class="att-head"><span class="att-lbl">&#128206; Photos / Files <span class="att-n" id="'+id+'_attn"></span></span><label class="att-add">+ Add<input type="file" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt" multiple onchange="addAtt(\''+t.key+'\',\''+q.qn+'\',this)"></label></div><div class="att-list" id="'+id+'_att"></div></div><div class="finding-form" id="'+id+'_ff"><div class="form-row"><div class="form-group" style="flex:100%"><label>Finding Title</label><input type="text" id="'+id+'_title" placeholder="Brief title for this gap" oninput="autoSave()"></div></div><div class="form-row"><div class="form-group" style="flex:100%"><label>Finding Description / Comments</label><textarea id="'+id+'_desc" placeholder="Describe the gap or non-compliance observed..." oninput="autoSave()"></textarea></div></div><div class="form-row"><div class="form-group" style="flex:100%"><label>Recommendation</label><textarea id="'+id+'_rec" placeholder="Recommended corrective action..." oninput="autoSave()"></textarea></div></div><div class="form-row"><div class="form-group"><label>Responsible Party</label><input type="text" id="'+id+'_party" placeholder="Who is responsible?" oninput="autoSave()"></div><div class="form-group"><label>Required Close-out Date</label><input type="date" id="'+id+'_due" oninput="autoSave()"></div></div></div></div>';
+      return head+'<div class="q-card" id="card_'+id+'"><div class="q-header"><span class="q-num">Q'+q.qn+'</span><div><div class="q-text">'+q.req+'</div>'+(q.ref?'<div class="q-ref">'+q.ref+'</div>':'')+(q.docs?'<div class="q-docs">\uD83D\uDCC4 '+q.docs+'</div>':'')+'</div></div><div class="q-radios"><label class="q-radio-label yes-opt"><input type="radio" name="'+id+'" value="yes" onchange="handleAns(\''+t.key+'\',\''+q.qn+'\',\'yes\',this)"><span>&#x2713; Yes</span></label><label class="q-radio-label no-opt"><input type="radio" name="'+id+'" value="no" onchange="handleAns(\''+t.key+'\',\''+q.qn+'\',\'no\',this)"><span>&#x2717; No</span></label><label class="q-radio-label na-opt"><input type="radio" name="'+id+'" value="na" onchange="handleAns(\''+t.key+'\',\''+q.qn+'\',\'na\',this)"><span>&#8212; N/A</span></label></div><div class="att-box" id="'+id+'_attbox"><div class="att-head"><span class="att-lbl">&#128206; Photos / Files <span class="att-n" id="'+id+'_attn"></span></span><span class="att-btns"><label class="att-cam">&#128247; Photo<input type="file" accept="image/*" capture="environment" onchange="addAtt(\''+t.key+'\',\''+q.qn+'\',this,1)"></label><label class="att-add">&#128206; File<input type="file" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt" multiple onchange="addAtt(\''+t.key+'\',\''+q.qn+'\',this)"></label></span></div><div class="att-list" id="'+id+'_att"></div></div><div class="finding-form" id="'+id+'_ff"><div class="form-row"><div class="form-group" style="flex:100%"><label>Finding Title</label><input type="text" id="'+id+'_title" placeholder="Brief title for this gap" oninput="autoSave()"></div></div><div class="form-row"><div class="form-group" style="flex:100%"><label>Finding Description / Comments</label><textarea id="'+id+'_desc" placeholder="Describe the gap or non-compliance observed..." oninput="autoSave()"></textarea></div></div><div class="form-row"><div class="form-group" style="flex:100%"><label>Recommendation</label><textarea id="'+id+'_rec" placeholder="Recommended corrective action..." oninput="autoSave()"></textarea></div></div><div class="form-row"><div class="form-group"><label>Responsible Party</label><input type="text" id="'+id+'_party" placeholder="Who is responsible?" oninput="autoSave()"></div><div class="form-group"><label>Required Close-out Date</label><input type="date" id="'+id+'_due" oninput="autoSave()"></div></div></div></div>';
     }).join('');
     return '<div class="topic-panel'+(i===0?' active':'')+'" id="panel-'+t.key+'"><div class="section-badge"><span>'+t.icon+' '+t.label+' &#8212; OSHA Compliance</span><span>'+qs.length+' questions</span></div>'+(INTROS[t.key]||'')+qh+'</div>';
   }).join('');
@@ -467,7 +485,8 @@ function shrinkImg(file){return new Promise(res=>{const fr=new FileReader();fr.o
 function readFile(file){return new Promise(res=>{const fr=new FileReader();fr.onload=()=>res(fr.result);fr.onerror=()=>res(null);fr.readAsDataURL(file);});}
 function attKey(tk,qn){return tk+'|'+qn;}
 function syncAttMeta(tk,qn){const k=attKey(tk,qn);if(!S[tk])S[tk]={};if(!S[tk][qn])S[tk][qn]={};S[tk][qn].files=(ATT[k]||[]).map(r=>({id:r.id,name:r.name,type:r.type}));}
-async function addAtt(tk,qn,input){const files=Array.prototype.slice.call(input.files||[]);input.value='';if(!files.length)return;const id=tk+'_'+qn,k=attKey(tk,qn);const box=document.getElementById(id+'_attbox');if(box)box.classList.add('busy');for(const f of files){if(f.size>15*1024*1024){alert('"'+f.name+'" is larger than 15 MB and was skipped.');continue;}let data=/^image\//.test(f.type)?await shrinkImg(f):await readFile(f);if(!data){alert('Could not read "'+f.name+'".');continue;}const rec={q:k,name:f.name,type:f.type||'file',data:data,ts:Date.now()};try{rec.id=await aPut(rec);(ATT[k]=ATT[k]||[]).push(rec);}catch(e){alert('Could not save "'+f.name+'" - device storage may be full.');}}if(box)box.classList.remove('busy');syncAttMeta(tk,qn);renderAtt(tk,qn);saveS();}
+async function addAtt(tk,qn,input,cam){const files=Array.prototype.slice.call(input.files||[]);input.value='';if(!files.length)return;const id=tk+'_'+qn,k=attKey(tk,qn);const box=document.getElementById(id+'_attbox');if(box)box.classList.add('busy');for(const f of files){if(f.size>25*1024*1024){toast('"'+f.name+'" is over 25 MB - skipped');continue;}const isImg=/^image\//i.test(f.type||'')||/\.(jpe?g|png|gif|heic|heif|webp|bmp|tiff?)$/i.test(f.name||'');let data=isImg?await shrinkImg(f):await readFile(f);if(!data){toast('Could not read "'+(f.name||'file')+'"');continue;}let nm=f.name||'photo.jpg';if(cam||/^(image|img_?\d*)\.(jpe?g|png|heic|heif)$/i.test(nm)){const dt=new Date(),p=function(n){return ('0'+n).slice(-2);};nm='Q'+qn+'-photo-'+p(dt.getMonth()+1)+p(dt.getDate())+'-'+p(dt.getHours())+p(dt.getMinutes())+p(dt.getSeconds())+'.jpg';}const rec={q:k,name:nm,type:(isImg?'image/jpeg':(f.type||'file')),data:data,ts:Date.now()};try{rec.id=await aPut(rec);(ATT[k]=ATT[k]||[]).push(rec);toast((cam?'Photo':'File')+' added to Q'+qn);}catch(err){toast('Could not save - device storage may be full');}}if(box)box.classList.remove('busy');syncAttMeta(tk,qn);renderAtt(tk,qn);saveS();}
+function toast(msg){let w=document.getElementById('toastWrap');if(!w){w=document.createElement('div');w.id='toastWrap';w.className='toast-wrap';document.body.appendChild(w);}const el=document.createElement('div');el.className='toast';el.textContent=msg;w.appendChild(el);setTimeout(function(){el.style.transition='opacity .4s';el.style.opacity='0';setTimeout(function(){el.remove();},450);},2200);}
 async function delAtt(id,tk,qn,btn){if(btn&&btn.getAttribute('data-arm')!=='1'){btn.setAttribute('data-arm','1');btn.classList.add('arm');btn.innerHTML='&#10003;';btn.title='Tap again to remove';setTimeout(function(){if(btn&&btn.getAttribute('data-arm')==='1'){btn.setAttribute('data-arm','');btn.classList.remove('arm');btn.innerHTML='&#10005;';btn.title='Remove';}},4000);return;}const k=attKey(tk,qn);try{await aDel(id);}catch(e){}ATT[k]=(ATT[k]||[]).filter(r=>r.id!==id);syncAttMeta(tk,qn);renderAtt(tk,qn);saveS();}
 function renderAtt(tk,qn){const id=tk+'_'+qn,k=attKey(tk,qn);const box=document.getElementById(id+'_att');if(!box)return;const list=ATT[k]||[];box.innerHTML=list.map(r=>{const x='<button class="att-x" title="Remove" onclick="delAtt('+r.id+',\''+tk+'\',\''+qn+'\',this)">&#10005;</button>';return /^image\//.test(r.type)?'<div class="att-item"><img src="'+r.data+'" alt="'+esc(r.name)+'" onclick="viewAtt('+r.id+',\''+tk+'\',\''+qn+'\')">'+x+'</div>':'<div class="att-item file"><a href="'+r.data+'" download="'+esc(r.name)+'"><span>&#128196;</span><span class="att-nm">'+esc(r.name)+'</span></a>'+x+'</div>';}).join('');const n=document.getElementById(id+'_attn');if(n)n.textContent=list.length?'('+list.length+')':'';}
 function viewAtt(id,tk,qn){const r=(ATT[attKey(tk,qn)]||[]).find(x=>x.id===id);if(!r)return;const o=document.createElement('div');o.className='att-view';o.innerHTML='<div class="att-view-bar"><span>'+esc(r.name)+'</span><button onclick="this.parentNode.parentNode.remove()">&#10005; Close</button></div><img src="'+r.data+'">';o.onclick=function(e){if(e.target===o)o.remove();};document.body.appendChild(o);}
